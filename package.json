@@ -13,6 +13,7 @@
   },
   "scripts": {
     "build": "npm run build -w @whoami/shared && npm run build -w @whoami/server && npm run build -w @whoami/client",
+    "build:client": "npm run build -w @whoami/shared && npm run build -w @whoami/client",
     "test": "npm run build -w @whoami/shared && npm run test --workspaces --if-present",
     "dev": "npm run build -w @whoami/shared && concurrently -n server,client -c blue,magenta \"npm run dev -w @whoami/server\" \"npm run dev -w @whoami/client\""
   },
