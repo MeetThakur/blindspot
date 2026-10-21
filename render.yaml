@@ -1,0 +1,19 @@
+# Render Blueprint for the game server (single instance only: rooms live in memory).
+services:
+  - type: web
+    name: blindspot-server
+    runtime: node
+    plan: free
+    numInstances: 1
+    buildCommand: npm ci && npm run build -w @whoami/shared && npm run build -w @whoami/server
+    startCommand: npm run start -w @whoami/server
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 22.12.0
+      - key: TRUST_PROXY_HOPS
+        value: "1"
+      - key: CLIENT_ORIGIN
+        sync: false # set to your frontend URL, e.g. https://blindspot.example.app

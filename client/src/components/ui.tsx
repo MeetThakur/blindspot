@@ -1,0 +1,219 @@
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { colorHex, formatClock } from '../lib/view';
+import { useGame } from '../lib/store';
+
+export function Badge({ children, tone = 'plain' }: { children: ReactNode; tone?: 'plain' | 'host' | 'good' | 'warn' | 'you' }) {
+  const tones = {
+    plain: 'bg-white',
+    host: 'bg-amber',
+    good: 'bg-lime/70',
+    warn: 'bg-blush',
+    you: 'bg-sky/40',
+  };
+  return (
+    <span className={`inline-flex items-center rounded-full border-2 border-ink px-2 py-0.5 text-xs font-extrabold ${tones[tone]}`}>
+      {children}
+    </span>
+  );
+}
+
+export function Avatar({ name, color, size = 36 }: { name: string; color: string; size?: number }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="inline-flex shrink-0 items-center justify-center rounded-full border-2 border-ink font-extrabold text-ink"
+      style={{ background: colorHex(color), width: size, height: size, fontSize: size * 0.45 }}
+    >
+      {(Array.from(name)[0] ?? '?').toUpperCase()}
+    </span>
+  );
+}
+
+export function Dialog({
+  title,
+  children,
+  confirmLabel,
+  onConfirm,
+  onCancel,
+  danger,
+}: {
+  title: string;
+  children: ReactNode;
+  confirmLabel: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  danger?: boolean;
+}) {
+  const ref = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    ref.current?.focus();
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onCancel();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onCancel]);
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-ink/50 p-4" onClick={onCancel}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className="card w-full max-w-sm"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-xl font-extrabold">{title}</h2>
+        <div className="mt-2 text-ink-soft">{children}</div>
+        <div className="mt-4 flex justify-end gap-2">
+          <button type="button" className="btn-secondary" onClick={onCancel}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            ref={ref}
+            className={danger ? 'btn-primary' : 'btn-primary'}
+            onClick={() => {
+              onConfirm();
+              onCancel();
+            }}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Button that asks for confirmation in a dialog instead of window.confirm. */
+export function ConfirmButton({
+  label,
+  title,
+  body,
+  confirmLabel,
+  onConfirm,
+  className = 'btn-danger',
+  disabled,
+}: {
+  label: string;
+  title: string;
+  body: ReactNode;
+  confirmLabel: string;
+  onConfirm: () => void;
+  className?: string;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button type="button" className={className} disabled={disabled} onClick={() => setOpen(true)}>
+        {label}
+      </button>
+      {open && (
+        <Dialog title={title} confirmLabel={confirmLabel} onConfirm={onConfirm} onCancel={() => setOpen(false)} danger>
+          {body}
+        </Dialog>
+      )}
+    </>
+  );
+}
+
+export function CopyButton({ text, label, className = 'btn-secondary' }: { text: string; label: string; className?: string }) {
+  const [done, setDone] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+      } catch {
+        /* nothing else to try */
+      }
+      ta.remove();
+    }
+    setDone(true);
+    setTimeout(() => setDone(false), 1600);
+  };
+  return (
+    <button type="button" className={className} onClick={copy}>
+      {done ? 'Copied!' : label}
+    </button>
+  );
+}
+
+export function Toasts() {
+  const { state, client } = useGame();
+  useEffect(() => {
+    if (!state.toasts.length) return;
+    const t = setTimeout(() => client.dismissToast(state.toasts[0]!.id), 4500);
+    return () => clearTimeout(t);
+  }, [state.toasts, client]);
+  return (
+    <div className="pointer-events-none fixed inset-x-0 top-3 z-50 flex flex-col items-center gap-2 px-4" aria-live="polite">
+      {state.toasts.map((t) => (
+        <div
+          key={t.id}
+          role={t.kind === 'error' ? 'alert' : 'status'}
+          className={`pointer-events-auto flex max-w-md items-start gap-3 rounded-xl border-2 border-ink px-4 py-2 font-bold shadow-[0_3px_0_0_var(--color-ink)] ${
+            t.kind === 'error' ? 'bg-blush' : t.kind === 'success' ? 'bg-lime/70' : 'bg-white'
+          }`}
+        >
+          <span>{t.text}</span>
+          <button type="button" aria-label="Dismiss" className="-mr-1 px-1 text-lg leading-none" onClick={() => client.dismissToast(t.id)}>
+            ×
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function ConnectionBanner() {
+  const { state } = useGame();
+  if (state.conn === 'connected' || !state.everConnected) return null;
+  return (
+    <div role="status" className="border-b-2 border-ink bg-amber px-4 py-2 text-center text-sm font-bold">
+      Connection lost. Reconnecting… your seat is saved.
+    </div>
+  );
+}
+
+/** Live countdown to a server-provided deadline (corrected for client clock skew). */
+export function Countdown({ deadline, paused, label }: { deadline: number | null; paused?: boolean; label?: string }) {
+  const { state } = useGame();
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (deadline === null) return;
+    const t = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(t);
+  }, [deadline]);
+  if (deadline === null) {
+    return paused ? <Badge tone="warn">Timer paused</Badge> : null;
+  }
+  const left = deadline - (now + state.clockOffset);
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border-2 border-ink px-3 py-1 font-extrabold tabular-nums ${
+        left < 6000 ? 'bg-blush' : 'bg-white'
+      }`}
+      role="timer"
+      aria-label={`${label ?? 'Time left'}: ${formatClock(left)}`}
+    >
+      {label && <span className="text-xs font-bold text-ink-soft">{label}</span>}
+      {formatClock(left)}
+    </span>
+  );
+}
+
+export function Spinner({ className = '' }: { className?: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`inline-block h-4 w-4 animate-spin rounded-full border-2 border-ink border-t-transparent ${className}`}
+    />
+  );
+}

@@ -1,0 +1,25 @@
+{
+  "name": "blindspot",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "shared",
+    "server",
+    "client"
+  ],
+  "engines": {
+    "node": ">=22.9.0"
+  },
+  "scripts": {
+    "build": "npm run build -w @whoami/shared && npm run build -w @whoami/server && npm run build -w @whoami/client",
+    "test": "npm run build -w @whoami/shared && npm run test --workspaces --if-present",
+    "dev": "npm run build -w @whoami/shared && concurrently -n server,client -c blue,magenta \"npm run dev -w @whoami/server\" \"npm run dev -w @whoami/client\""
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.4",
+    "@types/node": "^22.10.0",
+    "concurrently": "^9.1.0"
+  }
+}

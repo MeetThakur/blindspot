@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #fff7e6;
+  --color-ink: #241f3d;
+  --color-ink-soft: #5d5877;
+  --color-coral: #ff7a59;
+  --color-sky: #46b3f2;
+  --color-lime: #84cf55;
+  --color-violet: #9d7dff;
+  --color-amber: #ffc13b;
+  --color-mint: #d9f5e6;
+  --color-blush: #ffe3dc;
+  --font-display: ui-rounded, "SF Pro Rounded", "Nunito", "Segoe UI", system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-display);
+    color: var(--color-ink);
+    background: var(--color-paper);
+  }
+  body {
+    min-height: 100dvh;
+    background: var(--color-paper);
+  }
+  button, input, select, textarea {
+    font: inherit;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-violet);
+    outline-offset: 2px;
+  }
+}
+
+
+@utility card {
+  @apply rounded-2xl border-2 border-ink bg-white p-4 shadow-[0_3px_0_0_var(--color-ink)];
+}
+@utility btn {
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border-2 border-ink px-4 py-2 font-bold
+    shadow-[0_3px_0_0_var(--color-ink)] transition active:translate-y-[2px] active:shadow-[0_1px_0_0_var(--color-ink)]
+    disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none disabled:active:translate-y-0;
+}
+@utility btn-primary {
+  @apply btn bg-coral text-white;
+}
+@utility btn-secondary {
+  @apply btn bg-white text-ink hover:bg-amber/30;
+}
+@utility btn-danger {
+  @apply btn bg-white text-ink hover:bg-blush;
+}
+@utility field {
+  @apply min-h-11 w-full rounded-xl border-2 border-ink bg-white px-3 py-2 placeholder:text-ink-soft/60 disabled:bg-paper;
+}
+@utility label {
+  @apply mb-1 block text-sm font-bold text-ink-soft;
+}
+
