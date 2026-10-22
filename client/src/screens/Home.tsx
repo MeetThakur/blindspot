@@ -137,7 +137,7 @@ export function Home() {
             <li>On your turn, ask one question about yourself, or take one guess.</li>
             <li>The others answer Yes, No or Not sure. Answers are revealed together.</li>
             <li>
-              Guess right for <strong>+1 point</strong>. A wrong guess costs <strong>−1</strong> and your turn.
+              Guess right to score points: <strong>1st to guess gets the most points</strong>, followed by 2nd, 3rd, and so on. Wrong guesses cost only your turn with <strong>no score penalty</strong>.
             </li>
           </ol>
           <p className="mt-3 text-sm text-ink-soft">2–5 players. Best with everyone on a voice call.</p>
