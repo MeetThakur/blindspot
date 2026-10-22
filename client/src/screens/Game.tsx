@@ -99,22 +99,50 @@ function PlayerCard({
 }) {
   const { client } = useGame();
   const me = p.id === s.youId;
-  const active = s.round?.activeId === p.id && s.phase !== Phase.PAUSED;
+  const isPendingAsker = s.pending?.askerId === p.id;
+  const isRevealAsker = s.reveal?.askerId === p.id;
+  const active = (s.round?.activeId === p.id || isPendingAsker || isRevealAsker) && s.phase !== Phase.PAUSED;
   const live = s.phase === Phase.PAUSED ? s.pausedFrom : s.phase;
   const answered = s.pending?.answeredBy.includes(p.id);
   const owes = live === Phase.COLLECTING_ANSWERS && s.pending?.required.includes(p.id) && !answered;
+  const currentQuestionText = isPendingAsker ? s.pending?.text : isRevealAsker ? s.reveal?.text : null;
   return (
     <article
-      className={`card relative overflow-hidden !p-0 ${active ? 'ring-4 ring-violet' : ''}`}
+      className={`card relative overflow-hidden !p-0 transition-all duration-200 ${
+        active
+          ? 'border-4 !border-coral shadow-[0_0_0_2px_#ff724f,0_8px_24px_rgba(255,114,79,0.35),0_4px_0_0_var(--color-shadow)] ring-4 ring-coral/30 scale-[1.015] z-10'
+          : 'opacity-90 hover:opacity-100'
+      }`}
       aria-label={`${p.name}${me ? ' (you)' : ''}`}
       data-testid={`player-${p.name}`}
+      data-active={active ? 'true' : 'false'}
     >
-      <div className="h-2" style={{ background: colorHex(p.color) }} />
+      {active ? (
+        <div className="flex items-center justify-between bg-gradient-to-r from-coral to-amber px-3 py-1.5 text-white shadow-sm">
+          <div className="flex items-center gap-1.5 font-black text-xs uppercase tracking-wider">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-90" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" />
+            </span>
+            <span>{me ? '🎯 Your Turn' : `🎯 ${p.name}'s Turn`}</span>
+          </div>
+          <span className="rounded-full bg-black/30 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">
+            {live === Phase.COLLECTING_ANSWERS ? 'Awaiting Answers' : live === Phase.SHOWING_ANSWERS ? 'Revealing' : 'Active Turn'}
+          </span>
+        </div>
+      ) : (
+        <div className="h-2" style={{ background: colorHex(p.color) }} />
+      )}
       <div className="p-3">
         <div className="flex items-center gap-2">
           <Avatar name={p.name} color={p.color} size={32} />
           <span className="min-w-0 flex-1 truncate text-lg font-extrabold">{p.name}</span>
-          {active && <Badge tone="host">Turn</Badge>}
+          {active && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-coral px-2.5 py-0.5 text-xs font-black text-white shadow-sm animate-pulse">
+              <span>🎯</span>
+              <span>{live === Phase.COLLECTING_ANSWERS ? 'Asked' : 'Turn'}</span>
+            </span>
+          )}
         </div>
         <div className="mt-1 flex flex-wrap gap-1">
           {me && <Badge tone="you">You</Badge>}
@@ -125,6 +153,17 @@ function PlayerCard({
           {owes && <Badge>Thinking…</Badge>}
           {answered && <Badge tone="good">Answered</Badge>}
         </div>
+
+        {active && currentQuestionText && (
+          <div className="mt-2.5 rounded-xl border-2 border-coral/60 bg-coral/10 p-2.5 text-xs font-bold text-ink">
+            <div className="text-[10px] font-black uppercase tracking-wider text-coral">
+              Current Question:
+            </div>
+            <div className="mt-0.5 text-sm font-extrabold text-ink break-words">
+              “{currentQuestionText}”
+            </div>
+          </div>
+        )}
 
         <div className="mt-3 rounded-xl border-2 border-dashed border-ink bg-paper p-3 text-center">
           {me && !p.identity ? (
