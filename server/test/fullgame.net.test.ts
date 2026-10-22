@@ -72,8 +72,8 @@ describe.each([2, 3, 5])('a complete game with %i players', (count) => {
       for (const c of clients) {
         const r = c.snapshot.results!;
         expect(r.players).toHaveLength(count);
-        expect(r.reason).toBe('ONE_REMAINING');
-        expect(r.players.filter((p) => p.solved)).toHaveLength(count - 1);
+        expect(r.reason).toBe('ALL_SOLVED');
+        expect(r.players.filter((p) => p.solved)).toHaveLength(count);
         for (const p of r.players) expect(p.identity).toBe(h.server.registry.get(code)!.state.round!.assignments[p.id]);
       }
       expectedTotal += clients[0]!.snapshot.results!.players.reduce((s, p) => s + p.roundScore, 0);

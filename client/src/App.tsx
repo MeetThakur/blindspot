@@ -1,6 +1,6 @@
 import { Phase } from '@whoami/shared';
 import { useGame } from './lib/store';
-import { ConnectionBanner, Toasts } from './components/ui';
+import { ConnectionBanner, ThemeToggle, Toasts } from './components/ui';
 import { Home } from './screens/Home';
 import { Lobby } from './screens/Lobby';
 import { Game } from './screens/Game';
@@ -21,6 +21,9 @@ export function App() {
     <>
       <ConnectionBanner />
       <Toasts />
+      <div className="fixed top-3 right-4 z-40">
+        <ThemeToggle />
+      </div>
       {screen}
     </>
   );

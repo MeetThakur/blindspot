@@ -1,16 +1,28 @@
 @import "tailwindcss";
 
+:root {
+  color-scheme: light dark;
+
+  &:has(> head > meta[name="color-scheme"][content="dark"]) {
+    color-scheme: dark;
+  }
+  &:has(> head > meta[name="color-scheme"][content="light"]) {
+    color-scheme: light;
+  }
+}
+
 @theme {
-  --color-paper: #fff7e6;
-  --color-ink: #241f3d;
-  --color-ink-soft: #5d5877;
+  --color-paper: light-dark(#fff7e6, #0e0c18);
+  --color-surface: light-dark(#ffffff, #1a162b);
+  --color-ink: light-dark(#241f3d, #f4f2ff);
+  --color-ink-soft: light-dark(#5d5877, #aca6cc);
   --color-coral: #ff7a59;
   --color-sky: #46b3f2;
   --color-lime: #84cf55;
   --color-violet: #9d7dff;
   --color-amber: #ffc13b;
-  --color-mint: #d9f5e6;
-  --color-blush: #ffe3dc;
+  --color-mint: light-dark(#d9f5e6, #143526);
+  --color-blush: light-dark(#ffe3dc, #3b1812);
   --font-display: ui-rounded, "SF Pro Rounded", "Nunito", "Segoe UI", system-ui, sans-serif;
 }
 
@@ -33,9 +45,8 @@
   }
 }
 
-
 @utility card {
-  @apply rounded-2xl border-2 border-ink bg-white p-4 shadow-[0_3px_0_0_var(--color-ink)];
+  @apply rounded-2xl border-2 border-ink bg-surface p-4 shadow-[0_3px_0_0_var(--color-ink)];
 }
 @utility btn {
   @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border-2 border-ink px-4 py-2 font-bold
@@ -46,15 +57,14 @@
   @apply btn bg-coral text-white;
 }
 @utility btn-secondary {
-  @apply btn bg-white text-ink hover:bg-amber/30;
+  @apply btn bg-surface text-ink hover:bg-amber/30;
 }
 @utility btn-danger {
-  @apply btn bg-white text-ink hover:bg-blush;
+  @apply btn bg-surface text-ink hover:bg-blush;
 }
 @utility field {
-  @apply min-h-11 w-full rounded-xl border-2 border-ink bg-white px-3 py-2 placeholder:text-ink-soft/60 disabled:bg-paper;
+  @apply min-h-11 w-full rounded-xl border-2 border-ink bg-surface text-ink px-3 py-2 placeholder:text-ink-soft/60 disabled:bg-paper;
 }
 @utility label {
   @apply mb-1 block text-sm font-bold text-ink-soft;
 }
-

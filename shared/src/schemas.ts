@@ -30,7 +30,11 @@ const text = (max: number) => z.string().trim().min(1).max(max);
 
 // ---------- Settings ----------
 
+export const ModeSchema = z.enum(['text', 'voice']);
+export type GameMode = z.infer<typeof ModeSchema>;
+
 export const SettingsSchema = z.object({
+  mode: ModeSchema.default('text'),
   maxTurnsPerPlayer: z.number().int().min(1).max(50),
   /** Points added on a wrong guess; 0 disables, default -1. */
   wrongGuessPenalty: z.number().int().min(-3).max(0),
@@ -80,7 +84,10 @@ export const UpdateRoomSettingsSchema = z.object({
   list: ListSelectionSchema.optional(),
 });
 export const StartGameSchema = z.object({ actionId });
-export const SubmitQuestionSchema = z.object({ actionId, text: text(MAX_QUESTION_LENGTH) });
+export const SubmitQuestionSchema = z.object({
+  actionId,
+  text: z.string().trim().min(1).max(MAX_QUESTION_LENGTH).default('(Voice question)'),
+});
 export const SubmitAnswerSchema = z.object({ actionId, answer: AnswerSchema });
 export const SubmitGuessSchema = z.object({ actionId, text: text(MAX_GUESS_LENGTH) });
 export const NextTurnSchema = z.object({ actionId });
@@ -250,6 +257,7 @@ export const GameErrorSchema = z.object({ code: z.string(), message: z.string(),
 export type GameErrorPayload = z.infer<typeof GameErrorSchema>;
 
 export const DEFAULT_SETTINGS: Settings = {
+  mode: 'text',
   maxTurnsPerPlayer: 10,
   wrongGuessPenalty: -1,
   speedBonus: false,

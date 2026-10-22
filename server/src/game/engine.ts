@@ -380,7 +380,6 @@ function advanceTurn(d: GameState, ctx: Ctx, ev: GameEvent[]): void {
   const unsolved = r.order.filter((id) => !r.solved.includes(id));
   if (r.order.length < MIN_PLAYERS) return endRound(d, RoundEndReason.NOT_ENOUGH_PLAYERS, ctx, ev);
   if (unsolved.length === 0) return endRound(d, RoundEndReason.ALL_SOLVED, ctx, ev);
-  if (unsolved.length === 1) return endRound(d, RoundEndReason.ONE_REMAINING, ctx, ev);
 
   let pos = r.turnPos;
   do {
@@ -434,8 +433,15 @@ function requireActive(d: GameState, id: string): RoundState {
 
 function submitQuestion(d: GameState, id: string, raw: string, ctx: Ctx, ev: GameEvent[]): void {
   const r = requireActive(d, id);
-  const text = raw.trim();
-  if (!text || text.length > MAX_QUESTION_LENGTH) {
+  let text = raw.trim();
+  if (!text) {
+    if (d.settings.mode === 'voice') {
+      text = '(Voice question)';
+    } else {
+      fail(ErrorCode.INVALID_INPUT, `Questions must be 1-${MAX_QUESTION_LENGTH} characters.`);
+    }
+  }
+  if (text.length > MAX_QUESTION_LENGTH) {
     fail(ErrorCode.INVALID_INPUT, `Questions must be 1-${MAX_QUESTION_LENGTH} characters.`);
   }
   noteActivity(player(d, id));
@@ -625,7 +631,7 @@ function removePlayer(d: GameState, id: string, ctx: Ctx, ev: GameEvent[]): void
   if (wasActive && live === Phase.ASKING) return advanceTurn(d, ctx, ev);
   // SHOWING_ANSWERS: turnPos already points before the successor; the pending advance fixes it.
   const unsolved = r.order.filter((x) => !r.solved.includes(x)).length;
-  if (unsolved <= 1) endRound(d, unsolved === 0 ? RoundEndReason.ALL_SOLVED : RoundEndReason.ONE_REMAINING, ctx, ev);
+  if (unsolved === 0) endRound(d, RoundEndReason.ALL_SOLVED, ctx, ev);
 }
 
 /** Applies every time-based consequence that is due: host handover, absent players. */

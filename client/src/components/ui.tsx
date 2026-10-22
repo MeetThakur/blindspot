@@ -4,7 +4,7 @@ import { useGame } from '../lib/store';
 
 export function Badge({ children, tone = 'plain' }: { children: ReactNode; tone?: 'plain' | 'host' | 'good' | 'warn' | 'you' }) {
   const tones = {
-    plain: 'bg-white',
+    plain: 'bg-surface',
     host: 'bg-amber',
     good: 'bg-lime/70',
     warn: 'bg-blush',
@@ -159,7 +159,7 @@ export function Toasts() {
           key={t.id}
           role={t.kind === 'error' ? 'alert' : 'status'}
           className={`pointer-events-auto flex max-w-md items-start gap-3 rounded-xl border-2 border-ink px-4 py-2 font-bold shadow-[0_3px_0_0_var(--color-ink)] ${
-            t.kind === 'error' ? 'bg-blush' : t.kind === 'success' ? 'bg-lime/70' : 'bg-white'
+            t.kind === 'error' ? 'bg-blush' : t.kind === 'success' ? 'bg-lime/70' : 'bg-surface'
           }`}
         >
           <span>{t.text}</span>
@@ -198,7 +198,7 @@ export function Countdown({ deadline, paused, label }: { deadline: number | null
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-full border-2 border-ink px-3 py-1 font-extrabold tabular-nums ${
-        left < 6000 ? 'bg-blush' : 'bg-white'
+        left < 6000 ? 'bg-blush' : 'bg-surface'
       }`}
       role="timer"
       aria-label={`${label ?? 'Time left'}: ${formatClock(left)}`}
@@ -215,5 +215,66 @@ export function Spinner({ className = '' }: { className?: string }) {
       aria-hidden="true"
       className={`inline-block h-4 w-4 animate-spin rounded-full border-2 border-ink border-t-transparent ${className}`}
     />
+  );
+}
+
+export function ThemeToggle() {
+  const [theme, setTheme] = useState<'system' | 'light' | 'dark'>(() => {
+    try {
+      const saved = localStorage.getItem('blindspot.theme');
+      if (saved === 'light' || saved === 'dark') return saved;
+    } catch {}
+    return 'system';
+  });
+
+  const applyTheme = (next: 'system' | 'light' | 'dark') => {
+    setTheme(next);
+    try {
+      const meta = document.querySelector('meta[name="color-scheme"]');
+      if (next === 'system') {
+        localStorage.removeItem('blindspot.theme');
+        if (meta) meta.setAttribute('content', 'light dark');
+      } else {
+        localStorage.setItem('blindspot.theme', next);
+        if (meta) meta.setAttribute('content', next);
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'blindspot.theme') {
+        const val = e.newValue;
+        if (val === 'light' || val === 'dark') setTheme(val);
+        else setTheme('system');
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
+  const cycle = () => {
+    if (theme === 'system') applyTheme('dark');
+    else if (theme === 'dark') applyTheme('light');
+    else applyTheme('system');
+  };
+
+  const label =
+    theme === 'dark' ? 'Dark theme' : theme === 'light' ? 'Light theme' : 'System theme';
+
+  const icon =
+    theme === 'dark' ? '🌙' : theme === 'light' ? '☀️' : '🌓';
+
+  return (
+    <button
+      type="button"
+      onClick={cycle}
+      className="inline-flex min-h-9 items-center gap-1.5 rounded-full border-2 border-ink bg-surface px-3 py-1 text-xs font-black shadow-[0_2px_0_0_var(--color-ink)] transition hover:bg-amber/30 active:translate-y-[1px]"
+      aria-label={`Color scheme: ${label}. Click to switch.`}
+      title={`Color scheme: ${label}. Click to switch.`}
+    >
+      <span aria-hidden="true">{icon}</span>
+      <span className="capitalize">{theme}</span>
+    </button>
   );
 }

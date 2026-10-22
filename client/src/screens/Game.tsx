@@ -15,7 +15,7 @@ export function Game({ snapshot: s }: { snapshot: RoomSnapshot }) {
 
   const toneClass = {
     you: 'bg-coral text-white',
-    wait: 'bg-white',
+    wait: 'bg-surface',
     info: 'bg-sky/30',
     paused: 'bg-amber',
   }[status.tone];
@@ -51,7 +51,7 @@ export function Game({ snapshot: s }: { snapshot: RoomSnapshot }) {
 
       <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
         <div className="flex flex-col gap-4">
-          {live === Phase.ASKING && round.activeId === s.youId && s.phase !== Phase.PAUSED && <TurnPanel key={`turn-${s.history.length}-${round.activeId}`} />}
+          {live === Phase.ASKING && round.activeId === s.youId && s.phase !== Phase.PAUSED && <TurnPanel s={s} key={`turn-${s.history.length}-${round.activeId}`} />}
           {live === Phase.COLLECTING_ANSWERS && s.pending && <AnswerPanel s={s} />}
           {live === Phase.SHOWING_ANSWERS && s.reveal && <RevealPanel s={s} />}
           <section aria-label="Players" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -147,13 +147,14 @@ function useBriefLock(): [boolean, () => void] {
   return [locked, () => setLocked(true)];
 }
 
-function TurnPanel() {
+function TurnPanel({ s }: { s: RoomSnapshot }) {
   const { client } = useGame();
   const [mode, setMode] = useState<'ask' | 'guess'>('ask');
   const [text, setText] = useState('');
   const [locked, lock] = useBriefLock();
   const max = mode === 'ask' ? MAX_QUESTION_LENGTH : MAX_GUESS_LENGTH;
   const trimmed = text.trim();
+  const isVoice = s.settings.mode === 'voice';
 
   const submit = () => {
     if (!trimmed || locked) return;
@@ -176,40 +177,59 @@ function TurnPanel() {
               setMode(m);
               setText('');
             }}
-            className={`flex-1 rounded-xl border-2 border-ink px-3 py-2 font-extrabold ${mode === m ? 'bg-violet text-white' : 'bg-white'}`}
+            className={`flex-1 rounded-xl border-2 border-ink px-3 py-2 font-extrabold ${mode === m ? 'bg-violet text-white' : 'bg-surface'}`}
           >
-            {m === 'ask' ? 'Ask a question' : 'Make a guess'}
+            {m === 'ask' ? (isVoice ? '🎙️ Ask out loud' : 'Ask a question') : 'Make a guess'}
           </button>
         ))}
       </div>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          submit();
-        }}
-      >
-        <label className="label" htmlFor="turn-input">
-          {mode === 'ask' ? 'Your question (the others answer Yes / No / Not sure)' : 'Who or what do you think you are? One shot, a wrong guess costs your turn.'}
-        </label>
-        <div className="flex gap-2">
-          <input
-            id="turn-input"
-            className="field"
-            value={text}
-            maxLength={max}
+      {isVoice && mode === 'ask' ? (
+        <div className="flex flex-col gap-3 py-2">
+          <p className="label !mb-0 text-base">
+            Ask your question out loud in your Discord call, then click below to collect Yes / No answers:
+          </p>
+          <button
+            type="button"
+            className="btn-primary !min-h-14 text-lg font-black"
             disabled={locked}
-            autoComplete="off"
-            placeholder={mode === 'ask' ? 'Am I a real person?' : 'I am…'}
-            onChange={(e) => setText(e.target.value)}
-          />
-          <button type="submit" className="btn-primary" disabled={!trimmed || locked}>
-            {mode === 'ask' ? 'Ask' : 'Guess'}
+            onClick={() => {
+              lock();
+              client.ask('(Voice question)');
+            }}
+          >
+            🎙️ I asked out loud — Wait for Yes / No
           </button>
         </div>
-        <p className="mt-1 text-right text-xs text-ink-soft">
-          {text.length}/{max}
-        </p>
-      </form>
+      ) : (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            submit();
+          }}
+        >
+          <label className="label" htmlFor="turn-input">
+            {mode === 'ask' ? 'Your question (the others answer Yes / No / Not sure)' : 'Who or what do you think you are? One shot, a wrong guess costs your turn.'}
+          </label>
+          <div className="flex gap-2">
+            <input
+              id="turn-input"
+              className="field"
+              value={text}
+              maxLength={max}
+              disabled={locked}
+              autoComplete="off"
+              placeholder={mode === 'ask' ? 'Am I a real person?' : 'I am…'}
+              onChange={(e) => setText(e.target.value)}
+            />
+            <button type="submit" className="btn-primary" disabled={!trimmed || locked}>
+              {mode === 'ask' ? 'Ask' : 'Guess'}
+            </button>
+          </div>
+          <p className="mt-1 text-right text-xs text-ink-soft">
+            {text.length}/{max}
+          </p>
+        </form>
+      )}
     </section>
   );
 }
@@ -222,12 +242,13 @@ function AnswerPanel({ s }: { s: RoomSnapshot }) {
   const mine = p.yourAnswer;
   const asker = nameOf(s, p.askerId);
   const missing = p.required.filter((id) => !p.answeredBy.includes(id));
+  const isVoice = p.text === '(Voice question)' || s.settings.mode === 'voice';
 
   return (
     <section className="card" aria-label="Answers">
-      <p className="label !mb-0">{asker} asks</p>
+      <p className="label !mb-0">{isVoice ? `🎙️ ${asker} asked a question in call` : `${asker} asks`}</p>
       <p className="text-2xl font-black break-words" data-testid="question">
-        “{p.text}”
+        {isVoice ? 'Listen to the question on your call and answer below:' : `“${p.text}”`}
       </p>
       {owes ? (
         <div className="mt-3 grid grid-cols-3 gap-2" role="group" aria-label="Your answer">
@@ -278,7 +299,9 @@ function RevealPanel({ s }: { s: RoomSnapshot }) {
   return (
     <section className="card" aria-label="Revealed answers">
       <p className="label !mb-0">{nameOf(s, r.askerId)} asked</p>
-      <p className="text-2xl font-black break-words">“{r.text}”</p>
+      <p className="text-2xl font-black break-words">
+        {r.text === '(Voice question)' ? '🎙️ Voice question (asked in call)' : `“${r.text}”`}
+      </p>
       <ul className="mt-3 grid gap-2 sm:grid-cols-2">
         {r.answers.map((a) => {
           const p = playerById(s, a.playerId);
@@ -343,7 +366,7 @@ function describe(h: HistoryEntry, s: RoomSnapshot): { who: string; body: React.
     case 'question':
       return {
         who: nameOf(s, h.askerId),
-        tone: 'bg-white',
+        tone: 'bg-surface',
         body: (
           <>
             <p className="break-words font-bold">“{h.text}”</p>

@@ -100,19 +100,24 @@ describe('guessing', () => {
 });
 
 describe('round completion over sockets', () => {
-  it('2-player endgame: a correct guess ends the round, reveals everyone, and does not deadlock', async () => {
+  it('2-player endgame: both players can solve, reveals everyone, and does not deadlock', async () => {
     const { code, clients } = await startedRoom(['Ann', 'Bob']);
     await questionTurn(clients);
     await questionTurn(clients);
-    const g = activeOf(clients);
-    g.emit('submit_guess', { text: identityOf(code, g) });
+    const g1 = activeOf(clients);
+    g1.emit('submit_guess', { text: identityOf(code, g1) });
+    await waitTurnChange(clients, g1.id);
+    expect(clients[0]!.snapshot.phase).toBe(Phase.ASKING);
+    const g2 = activeOf(clients);
+    g2.emit('submit_guess', { text: identityOf(code, g2) });
     await phaseIs(clients, Phase.ROUND_RESULTS);
     for (const c of clients) {
-      expect(c.last('round_ended')).toEqual({ reason: 'ONE_REMAINING' });
+      expect(c.last('round_ended')).toEqual({ reason: 'ALL_SOLVED' });
       const results = c.snapshot.results!;
       expect(results.players).toHaveLength(2);
       for (const p of results.players) expect(p.identity).toBe(identityOf(code, clients.find((x) => x.id === p.id)!));
-      expect(results.players.find((p) => p.id === g.id)).toMatchObject({ solved: true, roundScore: 1, totalScore: 1, guessesMade: 1 });
+      expect(results.players.find((p) => p.id === g1.id)).toMatchObject({ solved: true, roundScore: 1, totalScore: 1, guessesMade: 1 });
+      expect(results.players.find((p) => p.id === g2.id)).toMatchObject({ solved: true, roundScore: 1, totalScore: 1, guessesMade: 1 });
       expect(c.snapshot.round!.activeId).toBeNull();
     }
   });

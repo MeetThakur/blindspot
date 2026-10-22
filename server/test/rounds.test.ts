@@ -84,22 +84,26 @@ describe('guessing & scoring', () => {
 });
 
 describe('round completion', () => {
-  it('ends when only one unsolved player remains (3 players)', () => {
+  it('continues until everyone solves their identity (3 players)', () => {
     const s = new Sim(['a', 'b', 'c']);
     s.start();
     s.rightGuess();
     expect(s.phase).toBe(Phase.ASKING);
     s.rightGuess();
+    expect(s.phase).toBe(Phase.ASKING);
+    s.rightGuess();
     expect(s.phase).toBe(Phase.ROUND_RESULTS);
-    expect(s.round.results!.reason).toBe('ONE_REMAINING');
-    expect(s.round.results!.players.filter((p) => p.solved)).toHaveLength(2);
+    expect(s.round.results!.reason).toBe('ALL_SOLVED');
+    expect(s.round.results!.players.filter((p) => p.solved)).toHaveLength(3);
   });
 
-  it('2-player endgame: solving ends the round, no deadlock', () => {
+  it('2-player endgame: both players can solve, no deadlock', () => {
     const s = new Sim(['a', 'b']);
     s.start();
     s.fullQuestionTurn();
     s.fullQuestionTurn();
+    s.rightGuess();
+    expect(s.phase).toBe(Phase.ASKING);
     s.rightGuess();
     expect(s.phase).toBe(Phase.ROUND_RESULTS);
     expect(s.snap('a').results!.players).toHaveLength(2);

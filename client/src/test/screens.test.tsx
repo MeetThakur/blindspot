@@ -222,7 +222,7 @@ describe('Results', () => {
     const user = userEvent.setup();
     expect(within(screen.getByTestId('result-Bob')).getByText('Shrek')).toBeInTheDocument();
     expect(within(screen.getByTestId('result-Ann')).getByText('Solved')).toBeInTheDocument();
-    expect(screen.getByText('Everyone else has figured it out!')).toBeInTheDocument();
+    expect(screen.getByText('Round ended with one player remaining.')).toBeInTheDocument();
     const board = screen.getByRole('heading', { name: 'Leaderboard' }).closest('section')!;
     expect(within(board).getAllByRole('listitem')[0]).toHaveTextContent('Ann');
     await user.click(screen.getByRole('button', { name: 'Play again' }));

@@ -32,10 +32,26 @@ export function statusFor(s: RoomSnapshot): Status {
     };
   }
   const active = s.round?.activeId ?? null;
+  const isSolved = s.players.find((p) => p.id === me)?.solved;
   if (live === Phase.ASKING) {
-    return active === me
-      ? { tone: 'you', title: 'Your turn!', detail: 'Ask one question about yourself, or make one guess.' }
-      : { tone: 'wait', title: `${nameOf(s, active)}'s turn`, detail: 'They are about to ask a question or make a guess.' };
+    if (active === me) {
+      return {
+        tone: 'you',
+        title: 'Your turn!',
+        detail: s.settings.mode === 'voice'
+          ? 'Ask one question out loud in your call, or make one guess.'
+          : 'Ask one question about yourself, or make one guess.',
+      };
+    }
+    return {
+      tone: 'wait',
+      title: `${nameOf(s, active)}'s turn`,
+      detail: isSolved
+        ? `You already solved! Listen for ${nameOf(s, active)} to ask or guess, and help by answering.`
+        : s.settings.mode === 'voice'
+          ? 'They are about to ask a question out loud or make a guess.'
+          : 'They are about to ask a question or make a guess.',
+    };
   }
   if (live === Phase.COLLECTING_ANSWERS && s.pending) {
     const done = s.pending.answeredBy.length;
@@ -61,10 +77,10 @@ export function formatClock(ms: number): string {
 
 export function reasonText(reason: string): string {
   switch (reason) {
-    case 'ONE_REMAINING':
-      return 'Everyone else has figured it out!';
     case 'ALL_SOLVED':
       return 'Everyone solved their identity!';
+    case 'ONE_REMAINING':
+      return 'Round ended with one player remaining.';
     case 'TURN_LIMIT':
       return 'The turn limit was reached.';
     case 'HOST_ENDED':

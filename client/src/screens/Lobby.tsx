@@ -95,7 +95,7 @@ export function Lobby({ snapshot: s }: { snapshot: RoomSnapshot }) {
                   disabled={!isHost}
                   onClick={() => client.updateSettings(undefined, { kind: 'category', id: c.id })}
                   className={`rounded-full border-2 border-ink px-3 py-1.5 text-sm font-bold disabled:cursor-default ${
-                    currentCategory === c.id ? 'bg-violet text-white' : 'bg-white hover:bg-amber/30'
+                    currentCategory === c.id ? 'bg-violet text-white' : 'bg-surface hover:bg-amber/30'
                   }`}
                 >
                   {c.name}
@@ -111,7 +111,7 @@ export function Lobby({ snapshot: s }: { snapshot: RoomSnapshot }) {
                       key={l.id}
                       type="button"
                       aria-pressed={s.list?.name === l.name && !currentCategory}
-                      className={`rounded-full border-2 border-ink px-3 py-1.5 text-sm font-bold ${s.list?.name === l.name && !currentCategory ? 'bg-violet text-white' : 'bg-white hover:bg-amber/30'}`}
+                      className={`rounded-full border-2 border-ink px-3 py-1.5 text-sm font-bold ${s.list?.name === l.name && !currentCategory ? 'bg-violet text-white' : 'bg-surface hover:bg-amber/30'}`}
                       onClick={() => useList(l.name, l.items)}
                     >
                       {l.name} ({l.items.length})
@@ -128,6 +128,38 @@ export function Lobby({ snapshot: s }: { snapshot: RoomSnapshot }) {
                 Custom list: <strong>{s.list.name}</strong> ({s.list.count} items)
               </p>
             )}
+          </fieldset>
+
+          <fieldset className="mt-4" disabled={!isHost}>
+            <legend className="label">Game Mode</legend>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                disabled={!isHost}
+                onClick={() => set({ mode: 'text' })}
+                className={`flex flex-col items-start rounded-xl border-2 border-ink p-3 text-left transition ${
+                  s.settings.mode === 'text' ? 'bg-violet text-white shadow-[0_2px_0_0_var(--color-ink)]' : 'bg-surface hover:bg-amber/30'
+                }`}
+              >
+                <span className="font-extrabold text-base">💬 Text mode</span>
+                <span className={`text-xs mt-1 ${s.settings.mode === 'text' ? 'text-white/80' : 'text-ink-soft'}`}>
+                  Type questions in the browser
+                </span>
+              </button>
+              <button
+                type="button"
+                disabled={!isHost}
+                onClick={() => set({ mode: 'voice' })}
+                className={`flex flex-col items-start rounded-xl border-2 border-ink p-3 text-left transition ${
+                  s.settings.mode === 'voice' ? 'bg-violet text-white shadow-[0_2px_0_0_var(--color-ink)]' : 'bg-surface hover:bg-amber/30'
+                }`}
+              >
+                <span className="font-extrabold text-base">🎙️ Voice mode</span>
+                <span className={`text-xs mt-1 ${s.settings.mode === 'voice' ? 'text-white/80' : 'text-ink-soft'}`}>
+                  Ask out loud in call, wait for Yes/No
+                </span>
+              </button>
+            </div>
           </fieldset>
 
           <fieldset className="mt-4 grid gap-3 sm:grid-cols-2" disabled={!isHost}>
