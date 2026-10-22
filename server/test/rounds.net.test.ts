@@ -201,8 +201,8 @@ describe('multiple rounds', () => {
     await other.expectError('restart_round', {}, ErrorCode.NOT_HOST);
     await other.expectError('return_to_lobby', {}, ErrorCode.NOT_HOST);
 
-    host.emit('update_room_settings', { settings: { speedBonus: true, wrongGuessPenalty: 0 }, list: { kind: 'category', id: 'animals' } });
-    await vi.waitFor(() => expect(other.snapshot.settings).toMatchObject({ speedBonus: true, wrongGuessPenalty: 0 }));
+    host.emit('update_room_settings', { settings: { turnTimeoutSec: 60 }, list: { kind: 'category', id: 'animals' } });
+    await vi.waitFor(() => expect(other.snapshot.settings).toMatchObject({ turnTimeoutSec: 60 }));
     expect(other.snapshot.list).toEqual({ name: 'Animals', count: 24 });
 
     host.emit('return_to_lobby');

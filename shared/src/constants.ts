@@ -21,7 +21,6 @@ export const ANSWER_TIMEOUT_OPTIONS = [null, 15, 30, 45, 60] as const;
 export const TURN_TIMEOUT_OPTIONS = [null, 30, 60, 90, 120] as const;
 
 export const DEFAULT_MAX_TURNS_PER_PLAYER = 10;
-export const DEFAULT_WRONG_GUESS_PENALTY = -1;
 
 /** How long a disconnected player is waited for before the game moves on. */
 export const DISCONNECT_GRACE_MS = 60_000;

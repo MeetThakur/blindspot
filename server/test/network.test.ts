@@ -129,12 +129,12 @@ describe('host permissions', () => {
     h = await startHarness();
     const { clients } = await h.room(['Ann', 'Bob', 'Cara']);
     const [ann, bob, cara] = clients as [any, any, any];
-    await bob.expectError('update_room_settings', { settings: { speedBonus: true } }, ErrorCode.NOT_HOST);
+    await bob.expectError('update_room_settings', { settings: { turnTimeoutSec: 60 } }, ErrorCode.NOT_HOST);
     await bob.expectError('start_game', {}, ErrorCode.NOT_HOST);
     await bob.expectError('kick_player', { playerId: cara.id }, ErrorCode.NOT_HOST);
 
-    ann.emit('update_room_settings', { settings: { speedBonus: true, turnTimeoutSec: 60 } });
-    await vi.waitFor(() => expect(cara.snapshot.settings).toMatchObject({ speedBonus: true, turnTimeoutSec: 60 }));
+    ann.emit('update_room_settings', { settings: { turnTimeoutSec: 60 } });
+    await vi.waitFor(() => expect(cara.snapshot.settings).toMatchObject({ turnTimeoutSec: 60 }));
   });
 
   it('validates settings and lists on the server', async () => {
@@ -204,7 +204,7 @@ describe('starting a game: identity privacy', () => {
   it('rejects mid-round settings changes, restarts and late joins over the wire', async () => {
     h = await startHarness();
     const { code, host } = await startedRoom(['Ann', 'Bob']);
-    await host.expectError('update_room_settings', { settings: { speedBonus: true } }, ErrorCode.WRONG_PHASE);
+    await host.expectError('update_room_settings', { settings: { turnTimeoutSec: 60 } }, ErrorCode.WRONG_PHASE);
     await host.expectError('start_game', {}, ErrorCode.WRONG_PHASE);
     const late = await h.connect();
     await late.expectError('join_room', { roomCode: code, name: 'Late' }, ErrorCode.GAME_IN_PROGRESS);

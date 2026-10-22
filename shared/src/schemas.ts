@@ -36,9 +36,6 @@ export type GameMode = z.infer<typeof ModeSchema>;
 export const SettingsSchema = z.object({
   mode: ModeSchema.default('text'),
   maxTurnsPerPlayer: z.number().int().min(1).max(50),
-  /** Points added on a wrong guess; 0 disables, default -1. */
-  wrongGuessPenalty: z.number().int().min(-3).max(0),
-  speedBonus: z.boolean(),
   answerTimeoutSec: literalUnion(ANSWER_TIMEOUT_OPTIONS),
   turnTimeoutSec: literalUnion(TURN_TIMEOUT_OPTIONS),
   timeoutAction: TimeoutActionSchema,
@@ -264,8 +261,6 @@ export type GameErrorPayload = z.infer<typeof GameErrorSchema>;
 export const DEFAULT_SETTINGS: Settings = {
   mode: 'text',
   maxTurnsPerPlayer: 10,
-  wrongGuessPenalty: 0,
-  speedBonus: false,
   answerTimeoutSec: null,
   turnTimeoutSec: null,
   timeoutAction: 'HOST_DECIDES',

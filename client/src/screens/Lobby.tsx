@@ -160,7 +160,7 @@ export function Lobby({ snapshot: s }: { snapshot: RoomSnapshot }) {
             </div>
           </fieldset>
 
-          <fieldset className="mt-4 grid gap-3 sm:grid-cols-2" disabled={!isHost}>
+          <fieldset className="mt-4" disabled={!isHost}>
             <legend className="sr-only">Round rules</legend>
             <Setting label="Turns per player">
               <select className="field" value={s.settings.maxTurnsPerPlayer} onChange={(e) => set({ maxTurnsPerPlayer: Number(e.target.value) })}>
@@ -169,12 +169,6 @@ export function Lobby({ snapshot: s }: { snapshot: RoomSnapshot }) {
                     {n}
                   </option>
                 ))}
-              </select>
-            </Setting>
-            <Setting label="Speed bonus (up to +2)">
-              <select className="field" value={String(s.settings.speedBonus)} onChange={(e) => set({ speedBonus: e.target.value === 'true' })}>
-                <option value="false">Off</option>
-                <option value="true">On</option>
               </select>
             </Setting>
           </fieldset>
@@ -226,8 +220,7 @@ export function Lobby({ snapshot: s }: { snapshot: RoomSnapshot }) {
           <div className="mt-4 rounded-xl border-2 border-border bg-mint text-ink p-3 text-sm" aria-label="Scoring rules">
             <p className="font-extrabold">Scoring & Placement</p>
             <p>
-              1st player to guess correctly scores {Math.max(2, s.players.length)} points, 2nd scores {Math.max(1, s.players.length - 1)} points, and so on. Wrong guesses cost only your turn with <strong>no score penalty</strong>!
-              {s.settings.speedBonus ? ' Speed bonus adds up to +2 if solved early.' : ''}
+              1st player to guess correctly scores {Math.max(2, s.players.length)} points, 2nd scores {Math.max(1, s.players.length - 1)} points, and so on. A wrong guess simply passes your turn to the next player.
             </p>
           </div>
         </section>

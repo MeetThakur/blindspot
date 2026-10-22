@@ -35,7 +35,7 @@ describe('guessing & scoring', () => {
     expect(s.round.solved).toHaveLength(1);
   });
 
-  it('floors the round score at 0 and the penalty can be 0', () => {
+  it('floors the round score at 0', () => {
     const s = new Sim(['a', 'b', 'c']);
     s.start({ maxTurnsPerPlayer: 3 });
     const g = s.active;
@@ -43,12 +43,6 @@ describe('guessing & scoring', () => {
     expect(s.snap(g).players.find((p) => p.id === g)!.roundScore).toBe(0);
     s.ok({ type: 'end_round', playerId: s.host });
     expect(s.state.totals[g]).toBe(0);
-
-    const z = new Sim(['a', 'b', 'c']);
-    z.start({ wrongGuessPenalty: 0 });
-    const h = z.active;
-    z.wrongGuess();
-    expect(z.round.stats[h]!.rawScore).toBe(0);
   });
 
   it('wrong guesses before a solve do not penalize the solve score', () => {
@@ -61,14 +55,6 @@ describe('guessing & scoring', () => {
     s.wrongGuess();
     s.rightGuess(g);
     expect(s.round.stats[g]!.rawScore).toBe(4);
-  });
-
-  it('optional speed bonus rewards early solves', () => {
-    const s = new Sim(['a', 'b', 'c', 'd']);
-    s.start({ speedBonus: true });
-    const g = s.active;
-    s.rightGuess();
-    expect(s.round.stats[g]!.rawScore).toBe(6);
   });
 
   it('host can accept an imperfect guess with accept_guess', () => {
@@ -213,7 +199,7 @@ describe('multiple rounds', () => {
     const s = new Sim(['a', 'b']);
     s.start();
     s.ok({ type: 'end_round', playerId: 'a' });
-    s.settings({ speedBonus: true });
+    s.settings({ turnTimeoutSec: 60 });
     s.ok({ type: 'join', playerId: 'c', name: 'c', token: 't' });
     s.ok({ type: 'restart_round', playerId: 'a' });
     expect(s.round.order).toHaveLength(3);

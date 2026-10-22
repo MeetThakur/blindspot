@@ -523,8 +523,7 @@ function submitGuess(d: GameState, id: string, raw: string, ctx: Ctx, ev: GameEv
     r.solved.push(id);
     const place = r.solved.length;
     const placementPoints = Math.max(1, d.players.length - (place - 1));
-    const speedPoints = d.settings.speedBonus ? Math.max(0, 2 - r.cyclesCompleted) : 0;
-    s.rawScore += placementPoints + speedPoints;
+    s.rawScore += placementPoints;
   } else {
     s.wrongGuesses++;
   }
@@ -542,8 +541,7 @@ function acceptGuess(d: GameState, targetId: string, ctx: Ctx, ev: GameEvent[]):
   r.solved.push(targetId);
   const place = r.solved.length;
   const placementPoints = Math.max(1, d.players.length - (place - 1));
-  const speedPoints = d.settings.speedBonus ? Math.max(0, 2 - r.cyclesCompleted) : 0;
-  s.rawScore += placementPoints + speedPoints;
+  s.rawScore += placementPoints;
   const identity = r.assignments[targetId]!;
   r.history.push({
     kind: 'guess',
