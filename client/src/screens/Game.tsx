@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Answer, CATEGORIES, MAX_GUESS_LENGTH, MAX_QUESTION_LENGTH, Phase, TimerKind, type HistoryEntry, type PlayerSnapshot, type RoomSnapshot } from '@whoami/shared';
+import { Answer, MAX_GUESS_LENGTH, MAX_QUESTION_LENGTH, Phase, TimerKind, type HistoryEntry, type PlayerSnapshot, type RoomSnapshot } from '@whoami/shared';
 import { useGame } from '../lib/store';
 import { ANSWER_BG, ANSWER_LABEL, colorHex, getHistoryPlayerId, nameOf, playerById, statusFor } from '../lib/view';
 import { Avatar, Badge, ConfirmButton, Countdown } from '../components/ui';
@@ -29,19 +29,19 @@ export function Game({ snapshot: s }: { snapshot: RoomSnapshot }) {
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 pb-16 pt-4">
       <header className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-black">
-            BLIND<span className="rounded-lg bg-coral px-2 text-white">SPOT</span>
-          </h1>
-          <Badge>Room {s.code}</Badge>
-        </div>
         <div className="flex flex-wrap items-center gap-2">
           <Badge>Round {s.roundNumber}</Badge>
           <Badge>
             Turn cycle {turnNo}/{round.maxCycles}
           </Badge>
-          {timer && <Countdown deadline={timer.deadline} paused={timer.paused} label={timer.kind === TimerKind.TURN ? 'Turn' : 'Answers'} />}
         </div>
+        {timer && (
+          <Countdown
+            deadline={timer.deadline}
+            paused={timer.paused}
+            label={timer.kind === TimerKind.TURN ? 'Turn' : 'Answers'}
+          />
+        )}
       </header>
 
       <section
@@ -74,12 +74,6 @@ export function Game({ snapshot: s }: { snapshot: RoomSnapshot }) {
         </div>
 
         <aside className="flex flex-col gap-4">
-          {(() => {
-            const cat = CATEGORIES.find((c) => c.name === s.list?.name);
-            return cat?.items && cat.items.length > 0 ? (
-              <CandidateRoster items={cat.items} listName={cat.name} />
-            ) : null;
-          })()}
           {isHost && <HostControls s={s} />}
           <History
             s={s}
@@ -379,99 +373,6 @@ function RevealPanel({ s }: { s: RoomSnapshot }) {
         )}
         {timer && <Countdown deadline={timer.deadline} paused={timer.paused} label="Next turn in" />}
       </div>
-    </section>
-  );
-}
-
-function CandidateRoster({ items, listName }: { items: string[]; listName: string }) {
-  const [crossedOut, setCrossedOut] = useState<Set<string>>(() => new Set());
-  const [search, setSearch] = useState('');
-  const [open, setOpen] = useState(true);
-
-  const toggle = (item: string) => {
-    setCrossedOut((prev) => {
-      const next = new Set(prev);
-      if (next.has(item)) next.delete(item);
-      else next.add(item);
-      return next;
-    });
-  };
-
-  const clearAll = () => setCrossedOut(new Set());
-
-  const remainingCount = items.length - crossedOut.size;
-  const filtered = items.filter((item) =>
-    item.toLowerCase().includes(search.toLowerCase().trim()),
-  );
-
-  return (
-    <section className="card flex flex-col gap-2.5" aria-label="Deduction Scratchpad">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-extrabold">Candidate Scratchpad</h2>
-          <span className="rounded-full bg-violet/15 px-2 py-0.5 text-xs font-black text-violet">
-            {remainingCount}/{items.length} remaining
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          className="text-xs font-bold text-violet transition hover:underline"
-        >
-          {open ? 'Hide' : 'Show'}
-        </button>
-      </div>
-
-      {open && (
-        <>
-          <p className="text-xs text-ink-soft">
-            Tap names to cross them off as you rule them out in <strong>{listName}</strong>.
-          </p>
-
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={search}
-              placeholder="Search candidates..."
-              onChange={(e) => setSearch(e.target.value)}
-              className="field !py-1 text-xs"
-            />
-            {crossedOut.size > 0 && (
-              <button
-                type="button"
-                onClick={clearAll}
-                className="whitespace-nowrap text-xs font-bold text-coral transition hover:underline"
-              >
-                Reset
-              </button>
-            )}
-          </div>
-
-          <div className="mt-1 flex max-h-56 flex-wrap gap-1.5 overflow-y-auto pr-1">
-            {filtered.map((item) => {
-              const struck = crossedOut.has(item);
-              return (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => toggle(item)}
-                  className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
-                    struck
-                      ? 'border-border bg-surface-subtle text-ink-soft/40 line-through opacity-50'
-                      : 'border-border bg-surface text-ink hover:border-violet shadow-[0_1px_0_0_var(--color-shadow)]'
-                  }`}
-                  aria-pressed={struck}
-                >
-                  <span>{item}</span>
-                  {struck && (
-                    <span className="text-[10px] font-black text-coral" aria-hidden="true">✕</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </>
-      )}
     </section>
   );
 }
