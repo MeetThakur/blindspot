@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Answer, MAX_GUESS_LENGTH, MAX_QUESTION_LENGTH, Phase, TimerKind, type HistoryEntry, type PlayerSnapshot, type RoomSnapshot } from '@whoami/shared';
 import { useGame } from '../lib/store';
-import { colorHex, nameOf, playerById, statusFor } from '../lib/view';
+import { ANSWER_BG, ANSWER_LABEL, colorHex, getHistoryPlayerId, nameOf, playerById, statusFor } from '../lib/view';
 import { Avatar, Badge, ConfirmButton, Countdown } from '../components/ui';
 
 export function Game({ snapshot: s }: { snapshot: RoomSnapshot }) {
   const { client } = useGame();
+  const [filterPlayerId, setFilterPlayerId] = useState<string | 'all'>('all');
   const isHost = s.hostId === s.youId;
   const status = statusFor(s);
   const live = s.phase === Phase.PAUSED ? s.pausedFrom : s.phase;
@@ -19,6 +20,11 @@ export function Game({ snapshot: s }: { snapshot: RoomSnapshot }) {
     info: 'bg-sky/20 text-ink',
     paused: 'bg-amber text-[#241f3d]',
   }[status.tone];
+
+  const handleSelectPlayer = (id: string | 'all') => {
+    setFilterPlayerId(id);
+    document.getElementById('history-section')?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 pb-16 pt-4">
@@ -56,21 +62,41 @@ export function Game({ snapshot: s }: { snapshot: RoomSnapshot }) {
           {live === Phase.SHOWING_ANSWERS && s.reveal && <RevealPanel s={s} />}
           <section aria-label="Players" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {s.players.map((p) => (
-              <PlayerCard key={p.id} p={p} s={s} isHost={isHost} />
+              <PlayerCard
+                key={p.id}
+                p={p}
+                s={s}
+                isHost={isHost}
+                onSelectPlayer={handleSelectPlayer}
+              />
             ))}
           </section>
         </div>
 
         <aside className="flex flex-col gap-4">
           {isHost && <HostControls s={s} />}
-          <History s={s} />
+          <History
+            s={s}
+            filterPlayerId={filterPlayerId}
+            onSelectPlayer={setFilterPlayerId}
+          />
         </aside>
       </div>
     </main>
   );
 }
 
-function PlayerCard({ p, s, isHost }: { p: PlayerSnapshot; s: RoomSnapshot; isHost: boolean }) {
+function PlayerCard({
+  p,
+  s,
+  isHost,
+  onSelectPlayer,
+}: {
+  p: PlayerSnapshot;
+  s: RoomSnapshot;
+  isHost: boolean;
+  onSelectPlayer: (id: string) => void;
+}) {
   const { client } = useGame();
   const me = p.id === s.youId;
   const active = s.round?.activeId === p.id && s.phase !== Phase.PAUSED;
@@ -118,6 +144,21 @@ function PlayerCard({ p, s, isHost }: { p: PlayerSnapshot; s: RoomSnapshot; isHo
           <span>
             {p.questionsAsked}Q · {p.wrongGuesses}✗
           </span>
+        </div>
+
+        <div className="mt-2.5 flex items-center justify-between border-t border-border pt-2">
+          <button
+            type="button"
+            onClick={() => onSelectPlayer(p.id)}
+            className="flex items-center gap-1.5 text-xs font-bold text-violet transition hover:underline"
+            aria-label={`View questions asked by ${p.name}`}
+          >
+            <span>{me ? 'Your' : `${p.name}'s`} questions</span>
+            <span className="rounded-full bg-violet/15 px-1.5 py-0.2 text-[11px] font-extrabold text-violet">
+              {p.questionsAsked}
+            </span>
+            <span aria-hidden="true">→</span>
+          </button>
         </div>
 
         {isHost && !me && (!p.connected || p.afk) && (
@@ -288,9 +329,6 @@ function AnswerPanel({ s }: { s: RoomSnapshot }) {
   );
 }
 
-const ANSWER_LABEL: Record<string, string> = { YES: 'Yes', NO: 'No', NOT_SURE: 'Not sure' };
-const ANSWER_BG: Record<string, string> = { YES: 'bg-lime text-[#12301c]', NO: 'bg-coral text-white', NOT_SURE: 'bg-amber text-[#241f3d]' };
-
 function RevealPanel({ s }: { s: RoomSnapshot }) {
   const { client } = useGame();
   const r = s.reveal!;
@@ -405,23 +443,171 @@ function describe(h: HistoryEntry, s: RoomSnapshot): { who: string; body: React.
   }
 }
 
-function History({ s }: { s: RoomSnapshot }) {
-  const items = [...s.history].reverse();
+function History({
+  s,
+  filterPlayerId,
+  onSelectPlayer,
+}: {
+  s: RoomSnapshot;
+  filterPlayerId: string | 'all';
+  onSelectPlayer: (id: string | 'all') => void;
+}) {
+  const activePlayer = filterPlayerId === 'all' ? null : playerById(s, filterPlayerId);
+
+  // If a player is selected, filter to actions where they are the primary actor (asker or guesser)
+  const allReversed = [...s.history].reverse();
+  const items = filterPlayerId === 'all'
+    ? allReversed
+    : allReversed.filter((h) => getHistoryPlayerId(h) === filterPlayerId);
+
+  // Chronological questions for the active player to compute stats and numbering
+  const playerQuestionsChronological = activePlayer
+    ? s.history.filter((h) => h.kind === 'question' && h.askerId === activePlayer.id)
+    : [];
+
+  let yesCount = 0;
+  let noCount = 0;
+  let notSureCount = 0;
+  if (activePlayer) {
+    for (const q of playerQuestionsChronological) {
+      if (q.kind === 'question') {
+        for (const a of q.answers) {
+          if (a.answer === 'YES') yesCount++;
+          else if (a.answer === 'NO') noCount++;
+          else if (a.answer === 'NOT_SURE') notSureCount++;
+        }
+      }
+    }
+  }
+
+  const guessesCount = activePlayer
+    ? s.history.filter((h) => h.kind === 'guess' && h.playerId === activePlayer.id).length
+    : 0;
+
   return (
-    <section className="card" aria-label="History">
-      <h2 className="text-lg font-extrabold">History</h2>
+    <section id="history-section" className="card flex flex-col gap-3" aria-label="History">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-extrabold">Questions & History</h2>
+        {filterPlayerId !== 'all' && (
+          <button
+            type="button"
+            onClick={() => onSelectPlayer('all')}
+            className="text-xs font-bold text-violet transition hover:underline"
+          >
+            Show all
+          </button>
+        )}
+      </div>
+
+      {/* Filter Tabs per Player */}
+      <div
+        className="flex flex-wrap items-center gap-1.5 border-b border-border pb-2.5"
+        role="tablist"
+        aria-label="Filter questions by player"
+      >
+        <button
+          type="button"
+          role="tab"
+          data-testid="history-filter-all"
+          aria-selected={filterPlayerId === 'all'}
+          onClick={() => onSelectPlayer('all')}
+          className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${
+            filterPlayerId === 'all'
+              ? 'bg-violet text-white shadow-[0_2px_0_0_var(--color-shadow)]'
+              : 'bg-surface hover:bg-surface-subtle text-ink border border-border'
+          }`}
+        >
+          All ({s.history.length})
+        </button>
+        {s.players.map((p) => {
+          const isYou = p.id === s.youId;
+          const isSelected = filterPlayerId === p.id;
+          return (
+            <button
+              key={p.id}
+              type="button"
+              role="tab"
+              data-testid={`history-filter-${p.name}`}
+              aria-selected={isSelected}
+              onClick={() => onSelectPlayer(p.id)}
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold transition ${
+                isSelected
+                  ? 'bg-violet text-white shadow-[0_2px_0_0_var(--color-shadow)]'
+                  : 'bg-surface hover:bg-surface-subtle text-ink border border-border'
+              }`}
+            >
+              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: colorHex(p.color) }} />
+              <span>{isYou ? 'You' : p.name}</span>
+              <span
+                className={`rounded-full px-1.5 py-0.2 text-[10px] font-extrabold ${
+                  isSelected ? 'bg-white/20 text-white' : 'bg-surface-subtle text-ink-soft'
+                }`}
+              >
+                {p.questionsAsked}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Deduction Summary Card when a single player is selected */}
+      {activePlayer && (
+        <div className="rounded-xl border border-border bg-surface-subtle p-2.5 text-xs">
+          <div className="flex items-center justify-between">
+            <span className="font-extrabold text-ink">
+              {activePlayer.id === s.youId ? 'Your questions & clues' : `${activePlayer.name}’s questions`}
+            </span>
+            {activePlayer.solved && <Badge tone="good">Solved!</Badge>}
+          </div>
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-ink-soft">
+            <span><strong>{activePlayer.questionsAsked}</strong> asked</span>
+            <span>·</span>
+            <span className="font-bold text-lime-700 dark:text-lime-400">{yesCount} Yes</span>
+            <span>·</span>
+            <span className="font-bold text-coral">{noCount} No</span>
+            <span>·</span>
+            <span className="font-bold text-amber-700 dark:text-amber-400">{notSureCount} Not sure</span>
+            {guessesCount > 0 && (
+              <>
+                <span>·</span>
+                <span>{guessesCount} {guessesCount === 1 ? 'guess' : 'guesses'}</span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {items.length === 0 ? (
-        <p className="mt-2 text-sm text-ink-soft">Questions and guesses will show up here.</p>
+        <p className="mt-2 py-4 text-center text-sm text-ink-soft">
+          {activePlayer
+            ? activePlayer.id === s.youId
+              ? "You haven't asked any questions yet."
+              : `${activePlayer.name} hasn't asked any questions yet.`
+            : 'Questions and guesses will show up here.'}
+        </p>
       ) : (
-        <ol className="mt-2 flex max-h-96 flex-col gap-2 overflow-y-auto pr-1" data-testid="history">
+        <ol className="mt-1 flex max-h-96 flex-col gap-2 overflow-y-auto pr-1" data-testid="history">
           {items.map((h, i) => {
             const d = describe(h, s);
+            const isQuestion = h.kind === 'question';
+            const qNum = isQuestion && activePlayer ? playerQuestionsChronological.indexOf(h) + 1 : null;
             return (
-              <li key={`${h.turn}-${items.length - i}`} className={`rounded-xl border-2 border-ink px-3 py-2 ${d.tone}`}>
-                <p className="text-xs font-extrabold text-ink-soft">
-                  {d.who} · turn {h.turn}
-                </p>
-                {d.body}
+              <li
+                key={`${h.turn}-${items.length - i}`}
+                className={`rounded-xl border-2 border-border px-3 py-2 shadow-[0_2px_0_0_var(--color-shadow)] ${d.tone}`}
+              >
+                <div className="flex items-center justify-between text-xs font-extrabold text-ink-soft">
+                  <span>
+                    {qNum !== null && qNum > 0 ? (
+                      <span className="mr-1.5 rounded bg-violet/15 px-1 py-0.5 font-black text-violet">
+                        Q #{qNum}
+                      </span>
+                    ) : null}
+                    {d.who}
+                  </span>
+                  <span>Turn {h.turn}</span>
+                </div>
+                <div className="mt-1">{d.body}</div>
               </li>
             );
           })}

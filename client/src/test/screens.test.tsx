@@ -206,6 +206,62 @@ describe('Game', () => {
     expect(within(screen.getByTestId('history')).getByText(/<script>alert\(1\)<\/script>/)).toBeInTheDocument();
     expect(document.querySelector('script:not([src])')).toBeNull();
   });
+
+  it('filters questions of each player separately', async () => {
+    const user = userEvent.setup();
+    const history = [
+      {
+        kind: 'question' as const,
+        turn: 1,
+        askerId: 'a',
+        text: 'Am I a human?',
+        answers: [{ playerId: 'b', answer: 'YES' as const, auto: false }],
+      },
+      {
+        kind: 'question' as const,
+        turn: 2,
+        askerId: 'b',
+        text: 'Am I an animal?',
+        answers: [{ playerId: 'a', answer: 'NO' as const, auto: false }],
+      },
+      {
+        kind: 'guess' as const,
+        turn: 3,
+        playerId: 'a',
+        text: 'Einstein',
+        correct: true,
+      },
+    ];
+    setup(gameSnapshot({
+      youId: 'a',
+      players: [
+        player({ id: 'a', name: 'Ann', questionsAsked: 1 }),
+        player({ id: 'b', name: 'Bob', questionsAsked: 1 }),
+      ],
+      history,
+    }));
+
+    // Initially "All" shows questions from both Ann and Bob
+    expect(screen.getByText('“Am I a human?”')).toBeInTheDocument();
+    expect(screen.getByText('“Am I an animal?”')).toBeInTheDocument();
+
+    // Filter to Ann's questions
+    await user.click(screen.getByTestId('history-filter-Ann'));
+    expect(screen.getByText('“Am I a human?”')).toBeInTheDocument();
+    expect(screen.queryByText('“Am I an animal?”')).not.toBeInTheDocument();
+    expect(screen.getByText(/Your questions & clues/)).toBeInTheDocument();
+
+    // Filter to Bob's questions
+    await user.click(screen.getByTestId('history-filter-Bob'));
+    expect(screen.getByText('“Am I an animal?”')).toBeInTheDocument();
+    expect(screen.queryByText('“Am I a human?”')).not.toBeInTheDocument();
+    expect(screen.getByText(/Bob’s questions/)).toBeInTheDocument();
+
+    // Reset back to All
+    await user.click(screen.getByTestId('history-filter-all'));
+    expect(screen.getByText('“Am I a human?”')).toBeInTheDocument();
+    expect(screen.getByText('“Am I an animal?”')).toBeInTheDocument();
+  });
 });
 
 describe('Results', () => {
@@ -235,5 +291,34 @@ describe('Results', () => {
     setup(gameSnapshot({ youId: 'b', phase: 'ROUND_RESULTS', results, players: [player({ id: 'a', name: 'Ann', isHost: true }), player({ id: 'b', name: 'Bob' })] }));
     expect(screen.queryByRole('button', { name: 'Play again' })).not.toBeInTheDocument();
     expect(screen.getByText(/Waiting for the host to start the next round/)).toBeInTheDocument();
+  });
+
+  it('displays questions asked by each player separately in results', () => {
+    const history = [
+      {
+        kind: 'question' as const,
+        turn: 1,
+        askerId: 'a',
+        text: 'Am I electric type?',
+        answers: [{ playerId: 'b', answer: 'YES' as const, auto: false }],
+      },
+      {
+        kind: 'question' as const,
+        turn: 2,
+        askerId: 'b',
+        text: 'Am I green?',
+        answers: [{ playerId: 'a', answer: 'YES' as const, auto: false }],
+      },
+    ];
+    setup(
+      gameSnapshot({
+        phase: 'ROUND_RESULTS',
+        results,
+        history,
+        players: [player({ id: 'a', name: 'Ann', isHost: true }), player({ id: 'b', name: 'Bob' })],
+      }),
+    );
+    expect(within(screen.getByTestId('result-Ann')).getByText('“Am I electric type?”')).toBeInTheDocument();
+    expect(within(screen.getByTestId('result-Bob')).getByText('“Am I green?”')).toBeInTheDocument();
   });
 });

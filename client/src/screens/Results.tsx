@@ -1,6 +1,6 @@
 import type { RoomSnapshot } from '@whoami/shared';
 import { useGame } from '../lib/store';
-import { nameOf, playerById, reasonText } from '../lib/view';
+import { ANSWER_BG, ANSWER_LABEL, getHistoryPlayerId, nameOf, playerById, reasonText } from '../lib/view';
 import { Avatar, Badge } from '../components/ui';
 
 export function Results({ snapshot: s }: { snapshot: RoomSnapshot }) {
@@ -20,20 +20,66 @@ export function Results({ snapshot: s }: { snapshot: RoomSnapshot }) {
       <section aria-label="Identities" className="grid gap-3 sm:grid-cols-2">
         {results.players.map((r) => {
           const p = playerById(s, r.id);
+          const playerHistory = s.history.filter((h) => getHistoryPlayerId(h) === r.id);
+          const questionsOnly = playerHistory.filter((h) => h.kind === 'question');
           return (
-            <article key={r.id} className="card" data-testid={`result-${nameOf(s, r.id)}`}>
-              <div className="flex items-center gap-2">
-                {p && <Avatar name={p.name} color={p.color} />}
-                <span className="min-w-0 flex-1 truncate text-lg font-extrabold">{nameOf(s, r.id)}</span>
-                {r.solved ? <Badge tone="good">Solved</Badge> : <Badge tone="warn">Not solved</Badge>}
+            <article key={r.id} className="card flex flex-col justify-between" data-testid={`result-${nameOf(s, r.id)}`}>
+              <div>
+                <div className="flex items-center gap-2">
+                  {p && <Avatar name={p.name} color={p.color} />}
+                  <span className="min-w-0 flex-1 truncate text-lg font-extrabold">{nameOf(s, r.id)}</span>
+                  {r.solved ? <Badge tone="good">Solved</Badge> : <Badge tone="warn">Not solved</Badge>}
+                </div>
+                <p className="mt-2 text-sm font-bold text-ink-soft">was</p>
+                <p className="text-2xl font-black break-words">{r.identity}</p>
+                <p className="mt-2 text-sm text-ink-soft">
+                  {r.questionsAsked} question{r.questionsAsked === 1 ? '' : 's'} · {r.guessesMade} guess{r.guessesMade === 1 ? '' : 'es'} ({r.wrongGuesses} wrong) ·{' '}
+                  <strong className="text-ink">+{r.roundScore} this round</strong>
+                  {r.roundScore === topRound && topRound > 0 && ' · Round MVP'}
+                </p>
               </div>
-              <p className="mt-2 text-sm font-bold text-ink-soft">was</p>
-              <p className="text-2xl font-black break-words">{r.identity}</p>
-              <p className="mt-2 text-sm text-ink-soft">
-                {r.questionsAsked} question{r.questionsAsked === 1 ? '' : 's'} · {r.guessesMade} guess{r.guessesMade === 1 ? '' : 'es'} ({r.wrongGuesses} wrong) ·{' '}
-                <strong className="text-ink">+{r.roundScore} this round</strong>
-                {r.roundScore === topRound && topRound > 0 && ' · Round MVP'}
-              </p>
+
+              {playerHistory.length > 0 && (
+                <details className="group mt-3 rounded-xl border border-border bg-surface-subtle p-2 text-sm">
+                  <summary className="flex cursor-pointer select-none items-center justify-between font-bold text-violet transition hover:underline">
+                    <span>Questions & deductions ({questionsOnly.length})</span>
+                    <span className="text-xs text-ink-soft transition-transform group-open:rotate-180" aria-hidden="true">▼</span>
+                  </summary>
+                  <ol className="mt-2 flex max-h-56 flex-col gap-2 overflow-y-auto border-t border-border pr-1 pt-2">
+                    {playerHistory.map((h, i) => (
+                      <li key={i} className="rounded-lg border border-border bg-surface p-2 text-xs">
+                        {h.kind === 'question' && (
+                          <>
+                            <div className="flex items-center justify-between font-bold text-ink-soft">
+                              <span>Q #{questionsOnly.indexOf(h) + 1}</span>
+                              <span>Turn {h.turn}</span>
+                            </div>
+                            <p className="mt-0.5 font-bold text-ink">“{h.text}”</p>
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {h.answers.map((a) => (
+                                <span
+                                  key={a.playerId}
+                                  className={`rounded-full border border-border px-1.5 py-0.2 text-[10px] font-bold ${ANSWER_BG[a.answer]}`}
+                                >
+                                  {nameOf(s, a.playerId)}: {ANSWER_LABEL[a.answer]}
+                                </span>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                        {h.kind === 'guess' && (
+                          <p className={h.correct ? 'font-bold text-lime-700 dark:text-lime-400' : 'font-bold text-coral'}>
+                            Guessed “{h.text}” — {h.correct ? '🎉 Correct!' : '✗ Wrong'}
+                          </p>
+                        )}
+                        {h.kind === 'skip' && (
+                          <p className="italic text-ink-soft">Turn skipped ({h.reason})</p>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                </details>
+              )}
             </article>
           );
         })}

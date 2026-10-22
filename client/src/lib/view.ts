@@ -100,6 +100,23 @@ export function roomFromUrl(search: string): string {
   return normalizeRoomCode(new URLSearchParams(search).get('room') ?? '');
 }
 
+export const ANSWER_BG: Record<string, string> = {
+  YES: 'bg-lime text-[#12301c]',
+  NO: 'bg-coral text-white',
+  NOT_SURE: 'bg-amber text-[#241f3d]',
+};
+
+export const ANSWER_LABEL: Record<string, string> = {
+  YES: 'Yes',
+  NO: 'No',
+  NOT_SURE: 'Not sure',
+};
+
+export function getHistoryPlayerId(h: { kind: string; askerId?: string; playerId?: string }): string | undefined {
+  if (h.kind === 'question' || h.kind === 'question_cancelled') return h.askerId;
+  return h.playerId;
+}
+
 export function inviteLink(origin: string, code: string): string {
   return `${origin}/?room=${code}`;
 }
