@@ -12,17 +12,31 @@
 }
 
 @theme {
-  --color-paper: light-dark(#fff7e6, #0e0c18);
-  --color-surface: light-dark(#ffffff, #1a162b);
-  --color-ink: light-dark(#241f3d, #f4f2ff);
-  --color-ink-soft: light-dark(#5d5877, #aca6cc);
-  --color-coral: #ff7a59;
-  --color-sky: #46b3f2;
-  --color-lime: #84cf55;
-  --color-violet: #9d7dff;
-  --color-amber: #ffc13b;
-  --color-mint: light-dark(#d9f5e6, #143526);
-  --color-blush: light-dark(#ffe3dc, #3b1812);
+  /* Canvas & Surfaces */
+  --color-paper: light-dark(#fdf8ee, #0b0914);
+  --color-surface: light-dark(#ffffff, #161224);
+  --color-surface-hover: light-dark(#f7f3e8, #201a33);
+  --color-surface-subtle: light-dark(#f1ecdf, #1c172d);
+
+  /* Typography */
+  --color-ink: light-dark(#211c38, #f5f3ff);
+  --color-ink-soft: light-dark(#635c7e, #a59fc4);
+  --color-ink-muted: light-dark(#8d87a6, #746e91);
+
+  /* Borders & Shadows */
+  --color-border: light-dark(#211c38, #2f2747);
+  --color-border-subtle: light-dark(#e5dfcd, #241e38);
+  --color-shadow: light-dark(#211c38, #05040a);
+
+  /* Accent Colors */
+  --color-coral: #ff724f;
+  --color-sky: #3ba7e6;
+  --color-lime: #76c745;
+  --color-violet: #8e6eff;
+  --color-amber: #f5b72e;
+  --color-mint: light-dark(#d4f4e3, #133324);
+  --color-blush: light-dark(#fde2dc, #3b1612);
+
   --font-display: ui-rounded, "SF Pro Rounded", "Nunito", "Segoe UI", system-ui, sans-serif;
 }
 
@@ -31,10 +45,14 @@
     font-family: var(--font-display);
     color: var(--color-ink);
     background: var(--color-paper);
+    color-scheme: light dark;
   }
   body {
     min-height: 100dvh;
     background: var(--color-paper);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   button, input, select, textarea {
     font: inherit;
@@ -45,26 +63,31 @@
   }
 }
 
+/* Ensure any border-ink / border-2 uses the refined border token */
+@utility border-ink {
+  border-color: var(--color-border);
+}
+
 @utility card {
-  @apply rounded-2xl border-2 border-ink bg-surface p-4 shadow-[0_3px_0_0_var(--color-ink)];
+  @apply rounded-2xl border-2 border-border bg-surface p-5 shadow-[0_4px_0_0_var(--color-shadow)] transition-colors;
 }
 @utility btn {
-  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border-2 border-ink px-4 py-2 font-bold
-    shadow-[0_3px_0_0_var(--color-ink)] transition active:translate-y-[2px] active:shadow-[0_1px_0_0_var(--color-ink)]
-    disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none disabled:active:translate-y-0;
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border-2 border-border px-4 py-2 font-extrabold
+    shadow-[0_3px_0_0_var(--color-shadow)] transition-all active:translate-y-[2px] active:shadow-[0_1px_0_0_var(--color-shadow)]
+    disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none disabled:active:translate-y-0;
 }
 @utility btn-primary {
-  @apply btn bg-coral text-white;
+  @apply btn bg-coral text-white hover:brightness-105 active:brightness-95;
 }
 @utility btn-secondary {
-  @apply btn bg-surface text-ink hover:bg-amber/30;
+  @apply btn bg-surface text-ink hover:bg-surface-hover;
 }
 @utility btn-danger {
   @apply btn bg-surface text-ink hover:bg-blush;
 }
 @utility field {
-  @apply min-h-11 w-full rounded-xl border-2 border-ink bg-surface text-ink px-3 py-2 placeholder:text-ink-soft/60 disabled:bg-paper;
+  @apply min-h-11 w-full rounded-xl border-2 border-border bg-surface text-ink px-3 py-2 placeholder:text-ink-soft/60 focus:outline-none focus:ring-2 focus:ring-violet disabled:bg-paper disabled:opacity-60;
 }
 @utility label {
-  @apply mb-1 block text-sm font-bold text-ink-soft;
+  @apply mb-1.5 block text-sm font-extrabold text-ink-soft;
 }

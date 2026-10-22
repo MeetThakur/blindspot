@@ -71,7 +71,7 @@ export function Home() {
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 pb-16 pt-8 sm:pt-12">
       <header className="text-center">
         <h1 className="text-5xl font-black tracking-tight sm:text-7xl">
-          BLIND<span className="inline-block -rotate-3 rounded-2xl border-2 border-ink bg-coral px-3 text-white shadow-[0_4px_0_0_var(--color-ink)]">SPOT</span>
+          BLIND<span className="inline-block -rotate-3 rounded-2xl border-2 border-border bg-coral px-3 text-white shadow-[0_4px_0_0_var(--color-shadow)]">SPOT</span>
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-lg text-ink-soft">
           Everyone can see who you are… except you. Ask questions, crack your secret identity, and beat your friends to it.
@@ -79,7 +79,7 @@ export function Home() {
       </header>
 
       {waking ? (
-        <div role="status" className="card flex items-start gap-3 bg-amber/40">
+        <div role="status" className="card flex items-start gap-3 border-amber bg-amber/20 text-ink">
           <Spinner className="mt-1" />
           <div>
             <p className="font-extrabold">Waking up the server…</p>
@@ -147,20 +147,20 @@ export function Home() {
           <h2 className="text-xl font-extrabold">What you'll see</h2>
           <div className="mt-3 grid grid-cols-2 gap-3">
             {SAMPLE.map((p) => (
-              <div key={p.name} className="rounded-xl border-2 border-ink p-2">
+              <div key={p.name} className="rounded-xl border-2 border-border bg-surface-subtle p-3 shadow-[0_2px_0_0_var(--color-shadow)]">
                 <div className="flex items-center gap-2">
-                  <Avatar name={p.name} color={p.color} size={26} />
-                  <span className="font-bold">{p.name}</span>
+                  <Avatar name={p.name} color={p.color} size={28} />
+                  <span className="font-extrabold">{p.name}</span>
                 </div>
-                <p className="mt-2 text-lg font-extrabold">{p.identity}</p>
+                <p className="mt-2 text-lg font-black">{p.identity}</p>
               </div>
             ))}
-            <div className="rounded-xl border-2 border-dashed border-ink bg-amber/30 p-2">
+            <div className="rounded-xl border-2 border-dashed border-border bg-amber/20 p-3 shadow-[0_2px_0_0_var(--color-shadow)]">
               <div className="flex items-center gap-2">
-                <Avatar name="You" color="coral" size={26} />
-                <span className="font-bold">You</span>
+                <Avatar name="You" color="coral" size={28} />
+                <span className="font-extrabold">You</span>
               </div>
-              <p className="mt-2 text-lg font-extrabold">???</p>
+              <p className="mt-2 text-lg font-black text-coral">???</p>
             </div>
           </div>
         </section>

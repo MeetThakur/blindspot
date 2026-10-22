@@ -14,10 +14,10 @@ export function Game({ snapshot: s }: { snapshot: RoomSnapshot }) {
   const turnNo = Math.min(round.cyclesCompleted + 1, round.maxCycles);
 
   const toneClass = {
-    you: 'bg-coral text-white',
-    wait: 'bg-surface',
-    info: 'bg-sky/30',
-    paused: 'bg-amber',
+    you: 'bg-coral text-white shadow-[0_4px_0_0_var(--color-shadow)]',
+    wait: 'bg-surface text-ink',
+    info: 'bg-sky/20 text-ink',
+    paused: 'bg-amber text-[#241f3d]',
   }[status.tone];
 
   return (
@@ -289,7 +289,7 @@ function AnswerPanel({ s }: { s: RoomSnapshot }) {
 }
 
 const ANSWER_LABEL: Record<string, string> = { YES: 'Yes', NO: 'No', NOT_SURE: 'Not sure' };
-const ANSWER_BG: Record<string, string> = { YES: 'bg-lime', NO: 'bg-coral text-white', NOT_SURE: 'bg-amber' };
+const ANSWER_BG: Record<string, string> = { YES: 'bg-lime text-[#12301c]', NO: 'bg-coral text-white', NOT_SURE: 'bg-amber text-[#241f3d]' };
 
 function RevealPanel({ s }: { s: RoomSnapshot }) {
   const { client } = useGame();

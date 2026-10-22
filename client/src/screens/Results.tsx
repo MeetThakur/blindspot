@@ -47,7 +47,7 @@ export function Results({ snapshot: s }: { snapshot: RoomSnapshot }) {
           {ranked.map((r, i) => {
             const p = playerById(s, r.id);
             return (
-              <li key={r.id} className="flex items-center gap-3 rounded-xl border-2 border-ink px-3 py-2">
+              <li key={r.id} className="flex items-center gap-3 rounded-xl border-2 border-border bg-surface px-3 py-2 shadow-[0_2px_0_0_var(--color-shadow)]">
                 <span className="w-6 text-center text-lg font-black">{i + 1}</span>
                 {p && <Avatar name={p.name} color={p.color} size={30} />}
                 <span className="min-w-0 flex-1 truncate font-bold">

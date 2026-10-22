@@ -4,14 +4,14 @@ import { useGame } from '../lib/store';
 
 export function Badge({ children, tone = 'plain' }: { children: ReactNode; tone?: 'plain' | 'host' | 'good' | 'warn' | 'you' }) {
   const tones = {
-    plain: 'bg-surface',
-    host: 'bg-amber',
-    good: 'bg-lime/70',
-    warn: 'bg-blush',
-    you: 'bg-sky/40',
+    plain: 'bg-surface text-ink',
+    host: 'bg-amber text-[#241f3d]',
+    good: 'bg-lime/80 text-[#12301c]',
+    warn: 'bg-blush text-[#451612]',
+    you: 'bg-sky/80 text-[#0c2f47]',
   };
   return (
-    <span className={`inline-flex items-center rounded-full border-2 border-ink px-2 py-0.5 text-xs font-extrabold ${tones[tone]}`}>
+    <span className={`inline-flex items-center rounded-full border border-border px-2.5 py-0.5 text-xs font-black ${tones[tone]}`}>
       {children}
     </span>
   );
@@ -253,28 +253,57 @@ export function ThemeToggle() {
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
-  const cycle = () => {
-    if (theme === 'system') applyTheme('dark');
-    else if (theme === 'dark') applyTheme('light');
-    else applyTheme('system');
-  };
-
-  const label =
-    theme === 'dark' ? 'Dark theme' : theme === 'light' ? 'Light theme' : 'System theme';
-
-  const icon =
-    theme === 'dark' ? '🌙' : theme === 'light' ? '☀️' : '🌓';
-
   return (
-    <button
-      type="button"
-      onClick={cycle}
-      className="inline-flex min-h-9 items-center gap-1.5 rounded-full border-2 border-ink bg-surface px-3 py-1 text-xs font-black shadow-[0_2px_0_0_var(--color-ink)] transition hover:bg-amber/30 active:translate-y-[1px]"
-      aria-label={`Color scheme: ${label}. Click to switch.`}
-      title={`Color scheme: ${label}. Click to switch.`}
+    <div
+      role="radiogroup"
+      aria-label="Theme preference"
+      className="inline-flex items-center rounded-full border-2 border-border bg-surface p-0.5 shadow-[0_2px_0_0_var(--color-shadow)]"
     >
-      <span aria-hidden="true">{icon}</span>
-      <span className="capitalize">{theme}</span>
-    </button>
+      <button
+        type="button"
+        role="radio"
+        aria-checked={theme === 'light'}
+        onClick={() => applyTheme('light')}
+        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-black transition ${
+          theme === 'light'
+            ? 'bg-amber text-[#241f3d] shadow-[0_1px_0_0_var(--color-shadow)]'
+            : 'text-ink-soft hover:text-ink'
+        }`}
+        title="Light theme"
+      >
+        <span aria-hidden="true">☀️</span>
+        <span className="hidden sm:inline">Light</span>
+      </button>
+      <button
+        type="button"
+        role="radio"
+        aria-checked={theme === 'dark'}
+        onClick={() => applyTheme('dark')}
+        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-black transition ${
+          theme === 'dark'
+            ? 'bg-violet text-white shadow-[0_1px_0_0_var(--color-shadow)]'
+            : 'text-ink-soft hover:text-ink'
+        }`}
+        title="Dark theme"
+      >
+        <span aria-hidden="true">🌙</span>
+        <span className="hidden sm:inline">Dark</span>
+      </button>
+      <button
+        type="button"
+        role="radio"
+        aria-checked={theme === 'system'}
+        onClick={() => applyTheme('system')}
+        className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-black transition ${
+          theme === 'system'
+            ? 'bg-surface-hover text-ink shadow-[0_1px_0_0_var(--color-shadow)]'
+            : 'text-ink-soft hover:text-ink'
+        }`}
+        title="Follow system theme"
+      >
+        <span aria-hidden="true">💻</span>
+        <span className="hidden sm:inline">Auto</span>
+      </button>
+    </div>
   );
 }

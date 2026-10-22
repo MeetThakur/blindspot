@@ -56,7 +56,7 @@ export function Lobby({ snapshot: s }: { snapshot: RoomSnapshot }) {
           </h2>
           <ul className="mt-3 flex flex-col gap-2">
             {s.players.map((p) => (
-              <li key={p.id} className="flex items-center gap-3 rounded-xl border-2 border-ink px-3 py-2">
+              <li key={p.id} className="flex items-center gap-3 rounded-xl border-2 border-border bg-surface px-3 py-2 shadow-[0_2px_0_0_var(--color-shadow)]">
                 <Avatar name={p.name} color={p.color} />
                 <span className="min-w-0 flex-1 truncate font-bold">{p.name}</span>
                 {p.isHost && <Badge tone="host">Host</Badge>}
@@ -232,7 +232,7 @@ export function Lobby({ snapshot: s }: { snapshot: RoomSnapshot }) {
             <p className="mt-2 text-sm text-ink-soft">Timers are off. The host can skip a stuck answer or turn at any time.</p>
           )}
 
-          <div className="mt-4 rounded-xl border-2 border-ink bg-mint p-3 text-sm" aria-label="Scoring rules">
+          <div className="mt-4 rounded-xl border-2 border-border bg-mint text-ink p-3 text-sm" aria-label="Scoring rules">
             <p className="font-extrabold">Scoring</p>
             <p>
               Correct guess +1{s.settings.speedBonus ? ' (+ up to 2 speed bonus)' : ''}. Wrong guess{' '}
