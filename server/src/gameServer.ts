@@ -368,6 +368,11 @@ export function createGameServer(overrides: Partial<ServerConfig> = {}, clock: (
       dispatch(room, { type: 'submit_guess', actionId: p.actionId, playerId, text: p.text }, socket);
     });
 
+    on('accept_guess', (p) => {
+      const { room, playerId } = current();
+      dispatch(room, { type: 'accept_guess', actionId: p.actionId, playerId, targetId: p.playerId }, socket);
+    });
+
     on('end_round', (p) => {
       const { room, playerId } = current();
       dispatch(room, { type: 'end_round', actionId: p.actionId, playerId }, socket);

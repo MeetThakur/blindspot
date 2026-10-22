@@ -102,6 +102,10 @@ export const SkipAnswerSchema = z.object({
   playerId: z.string().min(1).max(64).optional(),
 });
 export const SkipTurnSchema = z.object({ actionId });
+export const AcceptGuessSchema = z.object({
+  actionId,
+  playerId: z.string().min(1).max(64),
+});
 
 export const clientEventSchemas = {
   create_room: CreateRoomSchema,
@@ -120,6 +124,7 @@ export const clientEventSchemas = {
   end_round: EndRoundSchema,
   skip_answer: SkipAnswerSchema,
   skip_turn: SkipTurnSchema,
+  accept_guess: AcceptGuessSchema,
 } as const;
 export type ClientEventName = keyof typeof clientEventSchemas;
 export type ClientEventPayload<K extends ClientEventName> = z.infer<(typeof clientEventSchemas)[K]>;
@@ -259,7 +264,7 @@ export type GameErrorPayload = z.infer<typeof GameErrorSchema>;
 export const DEFAULT_SETTINGS: Settings = {
   mode: 'text',
   maxTurnsPerPlayer: 10,
-  wrongGuessPenalty: -1,
+  wrongGuessPenalty: 0,
   speedBonus: false,
   answerTimeoutSec: null,
   turnTimeoutSec: null,

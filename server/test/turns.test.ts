@@ -90,7 +90,7 @@ describe('turns', () => {
     s.ok(g);
     s.ok(g);
     expect(s.round.stats[guesser]!.wrongGuesses).toBe(1);
-    expect(s.round.stats[guesser]!.rawScore).toBe(-1);
+    expect(s.round.stats[guesser]!.rawScore).toBe(0);
   });
 });
 

@@ -64,7 +64,7 @@ describe('guessing', () => {
     expect(g.transcript()).not.toContain(secret);
     g.emit('submit_guess', { text: secret.toLowerCase() });
     await waitTurnChange(clients, g.id);
-    expect(g.snapshot.players.find((p) => p.id === g.id)).toMatchObject({ solved: true, identity: secret, roundScore: 1 });
+    expect(g.snapshot.players.find((p) => p.id === g.id)).toMatchObject({ solved: true, identity: secret, roundScore: 3 });
     for (const c of clients) expect(c.count('player_solved')).toBe(1);
     // the other players' own identities remain hidden from them
     for (const c of others) {
@@ -116,7 +116,7 @@ describe('round completion over sockets', () => {
       const results = c.snapshot.results!;
       expect(results.players).toHaveLength(2);
       for (const p of results.players) expect(p.identity).toBe(identityOf(code, clients.find((x) => x.id === p.id)!));
-      expect(results.players.find((p) => p.id === g1.id)).toMatchObject({ solved: true, roundScore: 1, totalScore: 1, guessesMade: 1 });
+      expect(results.players.find((p) => p.id === g1.id)).toMatchObject({ solved: true, roundScore: 2, totalScore: 2, guessesMade: 1 });
       expect(results.players.find((p) => p.id === g2.id)).toMatchObject({ solved: true, roundScore: 1, totalScore: 1, guessesMade: 1 });
       expect(c.snapshot.round!.activeId).toBeNull();
     }
@@ -180,7 +180,7 @@ describe('multiple rounds', () => {
       host.emit('end_round', { confirm: true });
       await phaseIs(clients, Phase.ROUND_RESULTS);
       const total = host.snapshot.players.reduce((n, p) => n + p.totalScore, 0);
-      expect(total).toBe(round);
+      expect(total).toBe(round * 3);
       if (round < 3) {
         host.emit('restart_round');
         await vi.waitFor(() => expect(clients.every((c) => c.snapshot.phase === Phase.ASKING && c.snapshot.roundNumber === round + 1)).toBe(true));

@@ -22,6 +22,16 @@ describe('normalizeGuess', () => {
     expect(guessMatches('!!!', '???')).toBe(false);
     expect(normalizeGuess('The')).toBe('the');
   });
+
+  it('matches surnames, distinctive first names, and minor typos', () => {
+    expect(guessMatches('Einstein', 'Albert Einstein')).toBe(true);
+    expect(guessMatches('Einstien', 'Albert Einstein')).toBe(true);
+    expect(guessMatches('Sherlock', 'Sherlock Holmes')).toBe(true);
+    expect(guessMatches('Holmes', 'Sherlock Holmes')).toBe(true);
+    expect(guessMatches('Leonardo da Vinchi', 'Leonardo da Vinci')).toBe(true);
+    expect(guessMatches('Vader', 'Darth Vader')).toBe(true);
+    expect(guessMatches('Pikachuu', 'Pikachu')).toBe(true);
+  });
 });
 
 describe('room codes', () => {

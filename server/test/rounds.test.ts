@@ -9,19 +9,19 @@ describe('guessing & scoring', () => {
     const g = s.active;
     s.rightGuess();
     expect(s.round.solved).toContain(g);
-    expect(s.round.stats[g]!.rawScore).toBe(1);
+    expect(s.round.stats[g]!.rawScore).toBe(3);
     expect(s.active).not.toBe(g);
     expect(s.phase).toBe(Phase.ASKING);
     expect(s.events.some((e) => e.type === 'player_solved' && e.playerId === g)).toBe(true);
   });
 
-  it('wrong guess costs the turn and the penalty, reveals nothing, is shown in history', () => {
+  it('wrong guess costs the turn and reveals nothing, shown in history without score penalty', () => {
     const s = new Sim(['a', 'b', 'c']);
     s.start();
     const g = s.active;
     s.wrongGuess();
     expect(s.round.solved).not.toContain(g);
-    expect(s.round.stats[g]!.rawScore).toBe(-1);
+    expect(s.round.stats[g]!.rawScore).toBe(0);
     expect(s.active).not.toBe(g);
     expect(s.snap(g).history.at(-1)).toMatchObject({ kind: 'guess', playerId: g, text: 'definitely wrong', correct: false });
     expect(JSON.stringify(s.snap(g))).not.toContain(s.identity(g));
@@ -51,7 +51,7 @@ describe('guessing & scoring', () => {
     expect(z.round.stats[h]!.rawScore).toBe(0);
   });
 
-  it('a wrong guess before a solve nets 0 with the default penalty', () => {
+  it('wrong guesses before a solve do not penalize the solve score', () => {
     const s = new Sim(['a', 'b', 'c', 'd']);
     s.start({ maxTurnsPerPlayer: 5 });
     const g = s.active;
@@ -60,7 +60,7 @@ describe('guessing & scoring', () => {
     s.wrongGuess();
     s.wrongGuess();
     s.rightGuess(g);
-    expect(s.round.stats[g]!.rawScore).toBe(0);
+    expect(s.round.stats[g]!.rawScore).toBe(4);
   });
 
   it('optional speed bonus rewards early solves', () => {
@@ -68,6 +68,17 @@ describe('guessing & scoring', () => {
     s.start({ speedBonus: true });
     const g = s.active;
     s.rightGuess();
+    expect(s.round.stats[g]!.rawScore).toBe(6);
+  });
+
+  it('host can accept an imperfect guess with accept_guess', () => {
+    const s = new Sim(['a', 'b', 'c']);
+    s.start();
+    const g = s.active;
+    s.wrongGuess();
+    expect(s.round.solved).not.toContain(g);
+    s.ok({ type: 'accept_guess', playerId: s.host, targetId: g });
+    expect(s.round.solved).toContain(g);
     expect(s.round.stats[g]!.rawScore).toBe(3);
   });
 
@@ -184,7 +195,7 @@ describe('multiple rounds', () => {
       if (round < 3) s.ok({ type: 'restart_round', playerId: s.host });
     }
     expect(new Set(starters).size).toBe(3);
-    expect(totalsAfter).toEqual([1, 2, 3]);
+    expect(totalsAfter).toEqual([3, 6, 9]);
   });
 
   it('only the host restarts or returns to lobby, and only from results', () => {

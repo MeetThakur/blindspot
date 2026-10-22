@@ -223,7 +223,7 @@ describe('disconnects', () => {
     back.emit('resume_session', { roomCode: code, reconnectToken: token });
     await until(() => expect(back.session?.playerId).toBe(guesser.id));
     const me = back.session!.snapshot.players.find((p) => p.id === guesser.id)!;
-    expect(me).toMatchObject({ solved: true, roundScore: 1, identity: identityOf(code, guesser) });
+    expect(me).toMatchObject({ solved: true, roundScore: 3, identity: identityOf(code, guesser) });
 
     const other = clients.find((c) => c !== guesser && c.connected && c !== clients[0])!;
     const otherToken = other.session!.reconnectToken;

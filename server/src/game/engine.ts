@@ -154,6 +154,11 @@ function handle(d: GameState, a: Action, ctx: Ctx, ev: GameEvent[]): void {
       requirePhase(d, Phase.ASKING);
       return skipActiveTurn(d, SkipReason.HOST, ctx, ev);
     }
+    case 'accept_guess': {
+      requireHost(d, a.playerId);
+      if (!IN_ROUND.has(d.phase)) fail(ErrorCode.WRONG_PHASE, 'There is no round in progress.');
+      return acceptGuess(d, a.targetId, ctx, ev);
+    }
     case 'end_round': {
       requireHost(d, a.playerId);
       if (!IN_ROUND.has(d.phase)) fail(ErrorCode.WRONG_PHASE, 'There is no round in progress to end.');
@@ -516,15 +521,46 @@ function submitGuess(d: GameState, id: string, raw: string, ctx: Ctx, ev: GameEv
   const correct = guessMatches(text, r.assignments[id]!);
   if (correct) {
     r.solved.push(id);
-    s.rawScore += 1 + (d.settings.speedBonus ? Math.max(0, 2 - r.cyclesCompleted) : 0);
+    const place = r.solved.length;
+    const placementPoints = Math.max(1, d.players.length - (place - 1));
+    const speedPoints = d.settings.speedBonus ? Math.max(0, 2 - r.cyclesCompleted) : 0;
+    s.rawScore += placementPoints + speedPoints;
   } else {
     s.wrongGuesses++;
-    s.rawScore += d.settings.wrongGuessPenalty;
   }
   r.history.push({ kind: 'guess', turn: r.turnCount, playerId: id, text, correct });
   ev.push({ type: 'guess_result', playerId: id, text, correct });
   if (correct) ev.push({ type: 'player_solved', playerId: id });
   advanceTurn(d, ctx, ev);
+}
+
+function acceptGuess(d: GameState, targetId: string, ctx: Ctx, ev: GameEvent[]): void {
+  const r = d.round!;
+  if (r.solved.includes(targetId)) return;
+  const s = r.stats[targetId];
+  if (!s) return;
+  r.solved.push(targetId);
+  const place = r.solved.length;
+  const placementPoints = Math.max(1, d.players.length - (place - 1));
+  const speedPoints = d.settings.speedBonus ? Math.max(0, 2 - r.cyclesCompleted) : 0;
+  s.rawScore += placementPoints + speedPoints;
+  const identity = r.assignments[targetId]!;
+  r.history.push({
+    kind: 'guess',
+    turn: r.turnCount,
+    playerId: targetId,
+    text: `${identity} (accepted by host)`,
+    correct: true,
+  });
+  ev.push({ type: 'guess_result', playerId: targetId, text: identity, correct: true });
+  ev.push({ type: 'player_solved', playerId: targetId });
+
+  const unsolved = r.order.filter((id) => !r.solved.includes(id));
+  if (unsolved.length === 0) {
+    endRound(d, RoundEndReason.ALL_SOLVED, ctx, ev);
+  } else if (r.order[r.turnPos] === targetId && livePhase(d) === Phase.ASKING) {
+    advanceTurn(d, ctx, ev);
+  }
 }
 
 // ------------------------------------------------------------------ timers fire

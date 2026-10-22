@@ -170,7 +170,7 @@ describe('disconnects', () => {
     const snap = s.snap(g);
     const me = snap.players.find((p) => p.id === g)!;
     expect(me.solved).toBe(true);
-    expect(me.roundScore).toBe(1);
+    expect(me.roundScore).toBe(3);
     expect(me.identity).toBe(s.identity(g));
 
     const other = s.others(g).find((i) => !s.round.solved.includes(i))!;

@@ -173,13 +173,6 @@ export function Lobby({ snapshot: s }: { snapshot: RoomSnapshot }) {
                 ))}
               </select>
             </Setting>
-            <Setting label="Wrong guess penalty">
-              <select className="field" value={s.settings.wrongGuessPenalty} onChange={(e) => set({ wrongGuessPenalty: Number(e.target.value) })}>
-                <option value={0}>None</option>
-                <option value={-1}>−1 point</option>
-                <option value={-2}>−2 points</option>
-              </select>
-            </Setting>
             <Setting label="Speed bonus (up to +2)">
               <select className="field" value={String(s.settings.speedBonus)} onChange={(e) => set({ speedBonus: e.target.value === 'true' })}>
                 <option value="false">Off</option>
@@ -233,11 +226,10 @@ export function Lobby({ snapshot: s }: { snapshot: RoomSnapshot }) {
           )}
 
           <div className="mt-4 rounded-xl border-2 border-border bg-mint text-ink p-3 text-sm" aria-label="Scoring rules">
-            <p className="font-extrabold">Scoring</p>
+            <p className="font-extrabold">Scoring & Placement</p>
             <p>
-              Correct guess +1{s.settings.speedBonus ? ' (+ up to 2 speed bonus)' : ''}. Wrong guess{' '}
-              {s.settings.wrongGuessPenalty === 0 ? 'costs only your turn' : `${s.settings.wrongGuessPenalty} point${s.settings.wrongGuessPenalty === -1 ? '' : 's'} and your turn`}
-              . A round score never goes below 0. Rounds end after {s.settings.maxTurnsPerPlayer} turns each.
+              1st player to guess correctly scores {Math.max(2, s.players.length)} points, 2nd scores {Math.max(1, s.players.length - 1)} points, and so on. Wrong guesses cost only your turn with <strong>no score penalty</strong>!
+              {s.settings.speedBonus ? ' Speed bonus adds up to +2 if solved early.' : ''}
             </p>
           </div>
         </section>

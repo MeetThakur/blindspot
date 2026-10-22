@@ -14,13 +14,18 @@ interface Props {
   onClose?: () => void;
 }
 
+export function splitListInput(raw: string): string[] {
+  return raw.split('\n').flatMap((line) => (line.includes(',') ? line.split(',') : [line]));
+}
+
 export function ListEditor({ store, playerCount, initial, onUse, onSaved, onClose }: Props) {
   const [name, setName] = useState(initial?.name ?? '');
-  const [text, setText] = useState(initial ? initial.items.join('\n') : '');
+  const [text, setText] = useState(initial ? initial.items.join(', ') : '');
   const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const analysis = useMemo(() => analyzeItems(text.split('\n')), [text]);
+  const rawItems = useMemo(() => splitListInput(text), [text]);
+  const analysis = useMemo(() => analyzeItems(rawItems), [rawItems]);
   const totalChars = analysis.items.reduce((n, s) => n + s.length, 0);
 
   const problems: string[] = [];
@@ -36,12 +41,8 @@ export function ListEditor({ store, playerCount, initial, onUse, onSaved, onClos
 
   const removeItem = (item: string) => {
     const key = item.trim().replace(/\s+/g, ' ');
-    setText(
-      text
-        .split('\n')
-        .filter((l) => l.trim().replace(/\s+/g, ' ') !== key)
-        .join('\n'),
-    );
+    const remaining = splitListInput(text).filter((l) => l.trim().replace(/\s+/g, ' ') !== key);
+    setText(remaining.join(', '));
   };
 
   const save = () => {
@@ -84,15 +85,37 @@ export function ListEditor({ store, playerCount, initial, onUse, onSaved, onClos
       </div>
 
       <div>
-        <label className="label" htmlFor="list-items">
-          Items, one per line
-        </label>
+        <div className="flex flex-wrap items-center justify-between gap-1">
+          <div className="flex items-center gap-1.5">
+            <label className="label !mb-0" htmlFor="list-items">
+              Items, one per line
+            </label>
+            <span className="text-xs text-ink-soft">(or comma-separated)</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs">
+            <button
+              type="button"
+              className="font-bold text-violet transition hover:underline"
+              onClick={() => setText(analysis.items.join(', '))}
+            >
+              Format commas
+            </button>
+            <span className="text-ink-soft">·</span>
+            <button
+              type="button"
+              className="font-bold text-violet transition hover:underline"
+              onClick={() => setText(analysis.items.join('\n'))}
+            >
+              Format lines
+            </button>
+          </div>
+        </div>
         <textarea
           id="list-items"
-          className="field min-h-40 font-mono text-sm"
+          className="field mt-1.5 min-h-40 font-mono text-sm"
           value={text}
           spellCheck={false}
-          placeholder={'Pikachu\nShrek\nTaylor Swift'}
+          placeholder={'Pikachu, Shrek, Taylor Swift, Einstein, Batman...'}
           onChange={(e) => setText(e.target.value)}
         />
         <p className="mt-1 text-sm" role="status" data-testid="list-count">

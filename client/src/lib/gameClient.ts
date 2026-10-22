@@ -186,6 +186,7 @@ export class GameClient {
   ask = (text: string): void => this.send('submit_question', { text });
   answer = (answer: Answer): void => this.send('submit_answer', { answer });
   guess = (text: string): void => this.send('submit_guess', { text });
+  acceptGuess = (playerId: string): void => this.send('accept_guess', { playerId });
   nextTurn = (): void => this.send('next_turn');
   skipAnswer = (playerId?: string): void => this.send('skip_answer', playerId ? { playerId } : {});
   skipTurn = (): void => this.send('skip_turn');

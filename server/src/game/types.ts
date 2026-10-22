@@ -137,6 +137,7 @@ export type Action =
   | WithAction<{ type: 'skip_answer'; playerId: string; targetId?: string }>
   | WithAction<{ type: 'skip_turn'; playerId: string }>
   | WithAction<{ type: 'end_round'; playerId: string }>
+  | WithAction<{ type: 'accept_guess'; playerId: string; targetId: string }>
   | WithAction<{ type: 'restart_round'; playerId: string }>
   | WithAction<{ type: 'return_to_lobby'; playerId: string }>
   | { type: 'disconnect'; playerId: string }
