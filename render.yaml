@@ -5,7 +5,7 @@ services:
     runtime: node
     plan: free
     numInstances: 1
-    buildCommand: npm ci && npm run build -w @whoami/shared && npm run build -w @whoami/server
+    buildCommand: npm ci --include=dev && npm run build -w @whoami/shared && npm run build -w @whoami/server
     startCommand: npm run start -w @whoami/server
     healthCheckPath: /health
     envVars:
