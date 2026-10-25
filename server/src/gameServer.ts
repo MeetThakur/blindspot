@@ -12,6 +12,14 @@ import {
 } from '@whoami/shared';
 import { defaultConfig, type ServerConfig } from './config.js';
 import {
+  createBarricadeRoom,
+  nextBarricadeDeadline,
+  reduceBarricade,
+  snapshotForBarricade,
+  type BarricadeAction,
+  type BarricadeGameEvent,
+} from './barricade/index.js';
+import {
   createRoom,
   nextDeadline,
   reduce,
@@ -124,8 +132,35 @@ export function createGameServer(overrides: Partial<ServerConfig> = {}, clock: (
   }
 
   function broadcastSnapshots(room: Room, skipSocket?: string): void {
+    if (room.gameType === 'barricade' && room.barricadeState) {
+      for (const [playerId, sid] of room.sockets) {
+        if (sid !== skipSocket) io.to(sid).emit('room_updated', snapshotForBarricade(room.barricadeState, playerId, clock()));
+      }
+      return;
+    }
+    if (!room.state) return;
     for (const [playerId, sid] of room.sockets) {
       if (sid !== skipSocket) io.to(sid).emit('room_updated', snapshotFor(room.state, playerId, clock()));
+    }
+  }
+
+  function emitBarricadeEvents(room: Room, events: BarricadeGameEvent[]): void {
+    for (const e of events) {
+      switch (e.type) {
+        case 'game_started':
+        case 'barricade_moved':
+        case 'barricade_wall_placed':
+        case 'barricade_turn_changed':
+        case 'barricade_game_over':
+        case 'player_disconnected':
+        case 'player_reconnected': {
+          const { type, ...payload } = e;
+          emitToRoom(room, type, payload);
+          break;
+        }
+        default:
+          break;
+      }
     }
   }
 
@@ -172,6 +207,7 @@ export function createGameServer(overrides: Partial<ServerConfig> = {}, clock: (
 
   /** Runs one reducer step for a room and fans the result out. Returns false if rejected. */
   function dispatch(room: Room, action: Action, socket?: GameSocket, skipSocket?: string): boolean {
+    if (!room.state) return false;
     const res = reduce(room.state, action, ctx());
     if (!res.ok) {
       if (socket) sendError(socket, res.error.code, res.error.message, 'actionId' in action ? action.actionId : undefined);
@@ -207,6 +243,7 @@ export function createGameServer(overrides: Partial<ServerConfig> = {}, clock: (
   function schedule(room: Room): void {
     if (room.wake) clearTimeout(room.wake);
     room.wake = null;
+    if (!room.state) return;
     const at = nextDeadline(room.state);
     if (at === null) return;
     // An already-overdue deadline that a sweep could not resolve (e.g. nobody left to inherit host)
@@ -215,7 +252,7 @@ export function createGameServer(overrides: Partial<ServerConfig> = {}, clock: (
     const delay = lead <= 0 ? 1000 : lead + 5;
     room.wake = setTimeout(() => {
       room.wake = null;
-      if (!registry.get(room.code)) return;
+      if (!registry.get(room.code) || !room.state) return;
       const t = room.state.timer;
       if (t && t.deadline !== null && clock() >= t.deadline) {
         dispatch(room, { type: 'expire', kind: t.kind, seq: t.seq });
@@ -225,6 +262,61 @@ export function createGameServer(overrides: Partial<ServerConfig> = {}, clock: (
     }, delay);
   }
 
+  function scheduleBarricade(room: Room): void {
+    if (room.wake) clearTimeout(room.wake);
+    room.wake = null;
+    if (!room.barricadeState) return;
+    const at = nextBarricadeDeadline(room.barricadeState);
+    if (at === null) return;
+    const lead = at - clock();
+    const delay = lead <= 0 ? 1000 : lead + 5;
+    room.wake = setTimeout(() => {
+      room.wake = null;
+      if (!registry.get(room.code) || !room.barricadeState) return;
+      const t = room.barricadeState.timer;
+      if (t && t.deadline !== null && clock() >= t.deadline) {
+        dispatchBarricade(room, { type: 'expire', seq: t.seq });
+      }
+      dispatchBarricade(room, { type: 'sweep' });
+    }, delay);
+  }
+
+  function dispatchBarricade(
+    room: Room,
+    action: BarricadeAction,
+    socket?: GameSocket,
+    skipSocket?: string,
+  ): boolean {
+    if (!room.barricadeState) return false;
+    const res = reduceBarricade(room.barricadeState, action, {
+      now: clock(),
+      timerScale: config.timerScale,
+    });
+    if (!res.ok) {
+      if (socket) sendError(socket, res.error.code, res.error.message, 'actionId' in action ? action.actionId : undefined);
+      return false;
+    }
+    if (res.duplicate) return true;
+    room.barricadeState = res.state;
+    for (const e of res.events) {
+      if (e.type !== 'player_removed') continue;
+      const selfInitiated = action.type === 'leave' && action.playerId === e.playerId;
+      unbind(
+        room,
+        e.playerId,
+        selfInitiated ? undefined : { code: ErrorCode.KICKED, message: 'You were removed from the room.' },
+      );
+    }
+    emitBarricadeEvents(room, res.events);
+    broadcastSnapshots(room, skipSocket);
+    if (room.barricadeState.players.length === 0) registry.delete(room.code);
+    else {
+      touchEmpty(room);
+      scheduleBarricade(room);
+    }
+    return true;
+  }
+
   function bind(room: Room, socket: GameSocket, playerId: string): void {
     room.sockets.set(playerId, socket.id);
     room.emptySince = null;
@@ -232,8 +324,12 @@ export function createGameServer(overrides: Partial<ServerConfig> = {}, clock: (
   }
 
   function sessionPayload(room: Room, playerId: string): SessionPayload {
-    const token = room.state.players.find((p) => p.id === playerId)!.token;
-    return { playerId, reconnectToken: token, snapshot: snapshotFor(room.state, playerId, clock()) };
+    if (room.gameType === 'barricade' && room.barricadeState) {
+      const token = room.barricadeState.players.find((p) => p.id === playerId)!.token;
+      return { playerId, reconnectToken: token, snapshot: snapshotForBarricade(room.barricadeState, playerId, clock()) };
+    }
+    const token = room.state!.players.find((p) => p.id === playerId)!.token;
+    return { playerId, reconnectToken: token, snapshot: snapshotFor(room.state!, playerId, clock()) };
   }
 
   // ---------------------------------------------------------------- sockets
@@ -282,18 +378,35 @@ export function createGameServer(overrides: Partial<ServerConfig> = {}, clock: (
 
       const code = registry.allocateCode();
       const playerId = newPlayerId();
-      const state = createRoom({
-        code,
-        hostId: playerId,
-        hostName: p.name.replace(/\s+/g, ' '),
-        hostToken: newReconnectToken(),
-        now: clock(),
-        graceMs: config.disconnectGraceMs,
-      });
-      const room: Room = { code, state, creatorIp: ip, sockets: new Map(), emptySince: null, wake: null };
-      registry.add(room);
-      bind(room, socket, playerId);
-      socket.emit('room_created', sessionPayload(room, playerId));
+      const gameType = p.gameType ?? 'blindspot';
+
+      if (gameType === 'barricade') {
+        const barricadeState = createBarricadeRoom({
+          code,
+          hostId: playerId,
+          hostName: p.name.replace(/\s+/g, ' '),
+          hostToken: newReconnectToken(),
+          now: clock(),
+          graceMs: config.disconnectGraceMs,
+        });
+        const room: Room = { code, gameType: 'barricade', barricadeState, creatorIp: ip, sockets: new Map(), emptySince: null, wake: null };
+        registry.add(room);
+        bind(room, socket, playerId);
+        socket.emit('room_created', sessionPayload(room, playerId));
+      } else {
+        const state = createRoom({
+          code,
+          hostId: playerId,
+          hostName: p.name.replace(/\s+/g, ' '),
+          hostToken: newReconnectToken(),
+          now: clock(),
+          graceMs: config.disconnectGraceMs,
+        });
+        const room: Room = { code, gameType: 'blindspot', state, creatorIp: ip, sockets: new Map(), emptySince: null, wake: null };
+        registry.add(room);
+        bind(room, socket, playerId);
+        socket.emit('room_created', sessionPayload(room, playerId));
+      }
     });
 
     on('join_room', (p) => {
@@ -301,30 +414,41 @@ export function createGameServer(overrides: Partial<ServerConfig> = {}, clock: (
       if (!joinLimiter.take(ip)) reject(ErrorCode.RATE_LIMITED, 'Too many join attempts. Please wait a minute.');
       const room = registry.get(p.roomCode) ?? reject(ErrorCode.ROOM_NOT_FOUND, 'Room not found. Check the code and try again.');
       const playerId = newPlayerId();
-      const ok = dispatch(
-        room,
-        { type: 'join', actionId: p.actionId, playerId, name: p.name, token: newReconnectToken() },
-        socket,
-        socket.id,
-      );
+      const ok = room.gameType === 'barricade'
+        ? dispatchBarricade(
+            room,
+            { type: 'join', actionId: p.actionId, playerId, name: p.name, token: newReconnectToken() },
+            socket,
+            socket.id,
+          )
+        : dispatch(
+            room,
+            { type: 'join', actionId: p.actionId, playerId, name: p.name, token: newReconnectToken() },
+            socket,
+            socket.id,
+          );
       if (!ok) return;
       bind(room, socket, playerId);
       socket.emit('room_joined', sessionPayload(room, playerId));
-      // The joiner was skipped in the broadcast above (not bound yet); everyone else is current.
     });
 
     on('resume_session', (p) => {
       if (socket.data.session) reject(ErrorCode.ALREADY_IN_ROOM, 'Leave your current room first.');
       if (!joinLimiter.take(ip)) reject(ErrorCode.RATE_LIMITED, 'Too many attempts. Please wait a minute.');
       const room = registry.get(p.roomCode) ?? reject(ErrorCode.ROOM_NOT_FOUND, 'That room no longer exists.');
-      const player = room.state.players.find((x) => safeEqual(x.token, p.reconnectToken));
+      const players = room.gameType === 'barricade' ? room.barricadeState?.players ?? [] : room.state?.players ?? [];
+      const player = players.find((x) => safeEqual(x.token, p.reconnectToken));
       if (!player) return reject(ErrorCode.SESSION_INVALID, 'Your session has expired. Please rejoin.');
       const old = room.sockets.get(player.id);
       if (old && old !== socket.id) {
         unbind(room, player.id, { code: ErrorCode.SESSION_INVALID, message: 'You signed in from another tab.' });
       }
       bind(room, socket, player.id);
-      dispatch(room, { type: 'reconnect', playerId: player.id }, socket, socket.id);
+      if (room.gameType === 'barricade') {
+        dispatchBarricade(room, { type: 'reconnect', playerId: player.id }, socket, socket.id);
+      } else {
+        dispatch(room, { type: 'reconnect', playerId: player.id }, socket, socket.id);
+      }
       socket.emit('room_joined', sessionPayload(room, player.id));
     });
 
@@ -335,7 +459,32 @@ export function createGameServer(overrides: Partial<ServerConfig> = {}, clock: (
 
     on('start_game', (p) => {
       const { room, playerId } = current();
-      dispatch(room, { type: 'start_game', actionId: p.actionId, playerId }, socket);
+      if (room.gameType === 'barricade') {
+        dispatchBarricade(room, { type: 'start_game', actionId: p.actionId, playerId }, socket);
+      } else {
+        dispatch(room, { type: 'start_game', actionId: p.actionId, playerId }, socket);
+      }
+    });
+
+    on('update_barricade_settings', (p) => {
+      const { room, playerId } = current();
+      if (room.gameType === 'barricade') {
+        dispatchBarricade(room, { type: 'update_barricade_settings', actionId: p.actionId, playerId, settings: p.settings }, socket);
+      }
+    });
+
+    on('barricade_move', (p) => {
+      const { room, playerId } = current();
+      if (room.gameType === 'barricade') {
+        dispatchBarricade(room, { type: 'barricade_move', actionId: p.actionId, playerId, x: p.x, y: p.y }, socket);
+      }
+    });
+
+    on('barricade_place_wall', (p) => {
+      const { room, playerId } = current();
+      if (room.gameType === 'barricade') {
+        dispatchBarricade(room, { type: 'barricade_place_wall', actionId: p.actionId, playerId, orientation: p.orientation, x: p.x, y: p.y }, socket);
+      }
     });
 
     on('submit_question', (p) => {
@@ -380,22 +529,38 @@ export function createGameServer(overrides: Partial<ServerConfig> = {}, clock: (
 
     on('restart_round', (p) => {
       const { room, playerId } = current();
-      dispatch(room, { type: 'restart_round', actionId: p.actionId, playerId }, socket);
+      if (room.gameType === 'barricade') {
+        dispatchBarricade(room, { type: 'restart_game', actionId: p.actionId, playerId }, socket);
+      } else {
+        dispatch(room, { type: 'restart_round', actionId: p.actionId, playerId }, socket);
+      }
     });
 
     on('return_to_lobby', (p) => {
       const { room, playerId } = current();
-      dispatch(room, { type: 'return_to_lobby', actionId: p.actionId, playerId }, socket);
+      if (room.gameType === 'barricade') {
+        dispatchBarricade(room, { type: 'return_to_lobby', actionId: p.actionId, playerId }, socket);
+      } else {
+        dispatch(room, { type: 'return_to_lobby', actionId: p.actionId, playerId }, socket);
+      }
     });
 
     on('leave_room', (p) => {
       const { room, playerId } = current();
-      dispatch(room, { type: 'leave', actionId: p.actionId, playerId }, socket);
+      if (room.gameType === 'barricade') {
+        dispatchBarricade(room, { type: 'leave', actionId: p.actionId, playerId }, socket);
+      } else {
+        dispatch(room, { type: 'leave', actionId: p.actionId, playerId }, socket);
+      }
     });
 
     on('kick_player', (p) => {
       const { room, playerId } = current();
-      dispatch(room, { type: 'kick', actionId: p.actionId, playerId, targetId: p.playerId }, socket);
+      if (room.gameType === 'barricade') {
+        dispatchBarricade(room, { type: 'kick', actionId: p.actionId, playerId, targetId: p.playerId }, socket);
+      } else {
+        dispatch(room, { type: 'kick', actionId: p.actionId, playerId, targetId: p.playerId }, socket);
+      }
     });
 
     socket.on('disconnect', () => {
@@ -404,7 +569,11 @@ export function createGameServer(overrides: Partial<ServerConfig> = {}, clock: (
       const room = s && registry.get(s.roomCode);
       if (!s || !room || room.sockets.get(s.playerId) !== socket.id) return;
       room.sockets.delete(s.playerId);
-      dispatch(room, { type: 'disconnect', playerId: s.playerId });
+      if (room.gameType === 'barricade') {
+        dispatchBarricade(room, { type: 'disconnect', playerId: s.playerId });
+      } else {
+        dispatch(room, { type: 'disconnect', playerId: s.playerId });
+      }
       touchEmpty(room);
     });
   });

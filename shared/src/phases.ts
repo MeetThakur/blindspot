@@ -37,6 +37,20 @@ export type SkipReason = (typeof SkipReason)[keyof typeof SkipReason];
 export const TimerKind = { TURN: 'turn', ANSWER: 'answer', REVEAL: 'reveal' } as const;
 export type TimerKind = (typeof TimerKind)[keyof typeof TimerKind];
 
+export const GameType = {
+  BLINDSPOT: 'blindspot',
+  BARRICADE: 'barricade',
+} as const;
+export type GameType = (typeof GameType)[keyof typeof GameType];
+
+export const BarricadePhase = {
+  LOBBY: 'LOBBY',
+  PLAYING: 'PLAYING',
+  PAUSED: 'PAUSED',
+  GAME_OVER: 'GAME_OVER',
+} as const;
+export type BarricadePhase = (typeof BarricadePhase)[keyof typeof BarricadePhase];
+
 export const ErrorCode = {
   WRONG_PHASE: 'WRONG_PHASE',
   NOT_HOST: 'NOT_HOST',
@@ -57,5 +71,9 @@ export const ErrorCode = {
   ALREADY_IN_ROOM: 'ALREADY_IN_ROOM',
   NOT_IN_ROOM: 'NOT_IN_ROOM',
   SESSION_INVALID: 'SESSION_INVALID',
+  WALL_OVERLAP: 'WALL_OVERLAP',
+  WALL_TRAPS_PLAYER: 'WALL_TRAPS_PLAYER',
+  NO_BARRICADES_LEFT: 'NO_BARRICADES_LEFT',
+  INVALID_MOVE: 'INVALID_MOVE',
 } as const;
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

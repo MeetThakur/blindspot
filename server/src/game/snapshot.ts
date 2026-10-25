@@ -13,6 +13,7 @@ export function snapshotFor(d: GameState, viewerId: string, now: number = Date.n
 
   return {
     code: d.code,
+    gameType: 'blindspot',
     phase: d.phase,
     pausedFrom: d.pausedFrom,
     hostId: d.hostId,

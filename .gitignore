@@ -8,3 +8,5 @@ coverage
 .vite
 .vercel
 .env*
+brag-output
+video

@@ -1,5 +1,14 @@
 import { io } from 'socket.io-client';
-import { ErrorCode, type RoomSnapshot, type SessionPayload, type SettingsPatch, type ListSelection, type Answer } from '@whoami/shared';
+import {
+  ErrorCode,
+  type Answer,
+  type BarricadeSettingsPatch,
+  type GameType,
+  type ListSelection,
+  type RoomSnapshot,
+  type SessionPayload,
+  type SettingsPatch,
+} from '@whoami/shared';
 
 export interface Toast {
   id: number;
@@ -162,10 +171,10 @@ export class GameClient {
     this.socket.emit(event, { actionId: newId(), ...payload });
   }
 
-  createRoom(name: string): void {
+  createRoom(name: string, gameType: GameType = 'blindspot'): void {
     safe(() => localStorage.setItem(NAME_KEY, name), undefined);
     this.set({ pending: true, formError: null });
-    this.send('create_room', { name });
+    this.send('create_room', { name, gameType });
   }
   joinRoom(roomCode: string, name: string): void {
     safe(() => localStorage.setItem(NAME_KEY, name), undefined);
@@ -181,6 +190,15 @@ export class GameClient {
   }
   updateSettings(settings?: SettingsPatch, list?: ListSelection): void {
     this.send('update_room_settings', { ...(settings ? { settings } : {}), ...(list ? { list } : {}) });
+  }
+  updateBarricadeSettings(settings: BarricadeSettingsPatch): void {
+    this.send('update_barricade_settings', { settings });
+  }
+  barricadeMove(x: number, y: number): void {
+    this.send('barricade_move', { x, y });
+  }
+  barricadePlaceWall(orientation: 'h' | 'v', x: number, y: number): void {
+    this.send('barricade_place_wall', { orientation, x, y });
   }
   startGame = (): void => this.send('start_game');
   ask = (text: string): void => this.send('submit_question', { text });

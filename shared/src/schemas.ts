@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import {
   ANSWER_TIMEOUT_OPTIONS,
+  BARRICADE_GRID_SIZE,
+  BARRICADE_TURN_TIMEOUT_OPTIONS,
+  BARRICADE_WALL_OPTIONS,
   MAX_GUESS_LENGTH,
   MAX_ITEM_LENGTH,
   MAX_LIST_NAME_LENGTH,
@@ -10,7 +13,16 @@ import {
   MAX_RAW_LIST_LINES,
   TURN_TIMEOUT_OPTIONS,
 } from './constants.js';
-import { Answer, Phase, RoundEndReason, SkipReason, TimeoutAction, TimerKind } from './phases.js';
+import {
+  Answer,
+  BarricadePhase,
+  GameType,
+  Phase,
+  RoundEndReason,
+  SkipReason,
+  TimeoutAction,
+  TimerKind,
+} from './phases.js';
 
 const values = <T extends Record<string, string>>(o: T) =>
   Object.values(o) as [T[keyof T], ...T[keyof T][]];
@@ -21,6 +33,9 @@ export const TimeoutActionSchema = z.enum(values(TimeoutAction));
 export const RoundEndReasonSchema = z.enum(values(RoundEndReason));
 export const SkipReasonSchema = z.enum(values(SkipReason));
 export const TimerKindSchema = z.enum(values(TimerKind));
+export const GameTypeSchema = z.enum(values(GameType)).default('blindspot');
+export const BarricadePhaseSchema = z.enum(values(BarricadePhase));
+export const AnyPhaseSchema = z.union([PhaseSchema, BarricadePhaseSchema]);
 
 const literalUnion = <T extends readonly (number | null)[]>(opts: T) =>
   z.union(opts.map((o) => z.literal(o)) as unknown as [z.ZodLiteral<number | null>, ...z.ZodLiteral<number | null>[]]);
@@ -43,6 +58,67 @@ export const SettingsSchema = z.object({
 export type Settings = z.infer<typeof SettingsSchema>;
 export const SettingsPatchSchema = SettingsSchema.partial().strict();
 export type SettingsPatch = z.infer<typeof SettingsPatchSchema>;
+
+// ---------- Barricade Settings & Game Schemas ----------
+
+export const BarricadeSettingsSchema = z.object({
+  barricadesPerPlayer: z.number().int().min(5).max(10),
+  turnTimeoutSec: literalUnion(BARRICADE_TURN_TIMEOUT_OPTIONS),
+});
+export type BarricadeSettings = z.infer<typeof BarricadeSettingsSchema>;
+export const BarricadeSettingsPatchSchema = BarricadeSettingsSchema.partial().strict();
+export type BarricadeSettingsPatch = z.infer<typeof BarricadeSettingsPatchSchema>;
+
+export const DEFAULT_BARRICADE_SETTINGS: BarricadeSettings = {
+  barricadesPerPlayer: 6,
+  turnTimeoutSec: 30,
+};
+
+export const PositionSchema = z.object({
+  x: z.number().int().min(0).max(BARRICADE_GRID_SIZE - 1),
+  y: z.number().int().min(0).max(BARRICADE_GRID_SIZE - 1),
+});
+export type Position = z.infer<typeof PositionSchema>;
+
+export const WallSchema = z.object({
+  orientation: z.enum(['h', 'v']),
+  x: z.number().int().min(0).max(BARRICADE_GRID_SIZE - 2),
+  y: z.number().int().min(0).max(BARRICADE_GRID_SIZE - 2),
+  placedBy: z.string().optional(),
+});
+export type Wall = z.infer<typeof WallSchema>;
+
+export const BarricadePlayerSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  color: z.string(),
+  connected: z.boolean(),
+  isHost: z.boolean(),
+  afk: z.boolean(),
+  position: PositionSchema,
+  startPosition: PositionSchema,
+  barricadesRemaining: z.number().int(),
+  wallsPlaced: z.number().int(),
+  movesCount: z.number().int(),
+  score: z.number().int().default(0),
+});
+export type BarricadePlayer = z.infer<typeof BarricadePlayerSchema>;
+
+export const BarricadeSnapshotSchema = z.object({
+  phase: BarricadePhaseSchema,
+  gridSize: z.number().int().default(BARRICADE_GRID_SIZE),
+  goal: PositionSchema,
+  players: z.array(BarricadePlayerSchema),
+  activeId: z.string().nullable(),
+  turnCount: z.number().int(),
+  walls: z.array(WallSchema),
+  winnerId: z.string().nullable(),
+  settings: BarricadeSettingsSchema,
+  timer: z
+    .object({ deadline: z.number().nullable(), paused: z.boolean() })
+    .nullable(),
+});
+export type BarricadeSnapshot = z.infer<typeof BarricadeSnapshotSchema>;
 
 // ---------- Lists ----------
 
@@ -68,7 +144,11 @@ export type ListSelection = z.infer<typeof ListSelectionSchema>;
 const displayName = z.string().trim().min(1).max(MAX_NAME_LENGTH);
 const roomCode = z.string().trim().toUpperCase().regex(/^[A-Z0-9]{4,8}$/);
 
-export const CreateRoomSchema = z.object({ actionId, name: displayName });
+export const CreateRoomSchema = z.object({
+  actionId,
+  name: displayName,
+  gameType: GameTypeSchema.optional(),
+});
 export const JoinRoomSchema = z.object({ actionId, roomCode, name: displayName });
 export const ResumeSessionSchema = z.object({
   actionId,
@@ -79,6 +159,21 @@ export const UpdateRoomSettingsSchema = z.object({
   actionId,
   settings: SettingsPatchSchema.optional(),
   list: ListSelectionSchema.optional(),
+});
+export const UpdateBarricadeSettingsSchema = z.object({
+  actionId,
+  settings: BarricadeSettingsPatchSchema,
+});
+export const BarricadeMoveSchema = z.object({
+  actionId,
+  x: z.number().int().min(0).max(8),
+  y: z.number().int().min(0).max(8),
+});
+export const BarricadePlaceWallSchema = z.object({
+  actionId,
+  orientation: z.enum(['h', 'v']),
+  x: z.number().int().min(0).max(7),
+  y: z.number().int().min(0).max(7),
 });
 export const StartGameSchema = z.object({ actionId });
 export const SubmitQuestionSchema = z.object({
@@ -109,6 +204,9 @@ export const clientEventSchemas = {
   join_room: JoinRoomSchema,
   resume_session: ResumeSessionSchema,
   update_room_settings: UpdateRoomSettingsSchema,
+  update_barricade_settings: UpdateBarricadeSettingsSchema,
+  barricade_move: BarricadeMoveSchema,
+  barricade_place_wall: BarricadePlaceWallSchema,
   start_game: StartGameSchema,
   submit_question: SubmitQuestionSchema,
   submit_answer: SubmitAnswerSchema,
@@ -194,8 +292,9 @@ export type RoundResults = z.infer<typeof RoundResultsSchema>;
 
 export const RoomSnapshotSchema = z.object({
   code: z.string(),
-  phase: PhaseSchema,
-  pausedFrom: PhaseSchema.nullable(),
+  gameType: GameTypeSchema,
+  phase: AnyPhaseSchema,
+  pausedFrom: AnyPhaseSchema.nullable(),
   hostId: z.string(),
   youId: z.string(),
   /** Server clock at send time, so clients can correct countdowns for clock skew. */
@@ -234,6 +333,7 @@ export const RoomSnapshotSchema = z.object({
     .object({ kind: TimerKindSchema, deadline: z.number().nullable(), paused: z.boolean() })
     .nullable(),
   results: RoundResultsSchema.nullable(),
+  barricade: BarricadeSnapshotSchema.nullable().optional(),
 });
 export type RoomSnapshot = z.infer<typeof RoomSnapshotSchema>;
 
@@ -252,6 +352,10 @@ export const serverEventNames = [
   'game_error',
   'player_disconnected',
   'player_reconnected',
+  'barricade_moved',
+  'barricade_wall_placed',
+  'barricade_turn_changed',
+  'barricade_game_over',
 ] as const;
 export type ServerEventName = (typeof serverEventNames)[number];
 

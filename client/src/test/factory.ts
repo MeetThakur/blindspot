@@ -62,6 +62,7 @@ export function player(over: Partial<PlayerSnapshot> & { id: string; name: strin
 export function snapshot(over: Partial<RoomSnapshot> = {}): RoomSnapshot {
   return {
     code: 'ABCDE',
+    gameType: 'blindspot',
     phase: 'LOBBY',
     pausedFrom: null,
     hostId: 'a',
