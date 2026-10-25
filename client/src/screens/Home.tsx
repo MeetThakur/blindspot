@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MAX_NAME_LENGTH } from '@whoami/shared';
+import { MAX_NAME_LENGTH, type GameType } from '@whoami/shared';
 import { storedName } from '../lib/gameClient';
 import { useGame } from '../lib/store';
 import { normalizeRoomCode, roomFromUrl } from '../lib/view';
@@ -10,10 +10,22 @@ export function Home() {
   const invite = roomFromUrl(window.location.search);
   const [name, setName] = useState(storedName);
   const [code, setCode] = useState(invite);
+  const [selectedGame, setSelectedGame] = useState<GameType>('battleship');
   const waking = !state.everConnected;
   const trimmed = name.trim();
   const canCreate = !waking && !state.pending && trimmed.length > 0;
   const canJoin = canCreate && code.length >= 4;
+
+  const handleHostGame = (game: GameType) => {
+    setSelectedGame(game);
+    if (trimmed.length > 0 && !waking && !state.pending) {
+      client.createRoom(trimmed, game);
+    } else {
+      const input = document.getElementById('name');
+      input?.focus();
+      input?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
 
   const createButton = (
     <div>
@@ -21,7 +33,7 @@ export function Home() {
         type="button"
         className={`${invite ? 'btn-secondary' : 'btn-primary'} w-full`}
         disabled={!canCreate}
-        onClick={() => client.createRoom(trimmed, 'blindspot')}
+        onClick={() => client.createRoom(trimmed, selectedGame)}
       >
         {state.pending ? 'Working…' : 'Create a room'}
       </button>
@@ -111,6 +123,55 @@ export function Home() {
           }}
         />
 
+        {!invite && (
+          <div className="mt-4">
+            <p className="label !mb-1.5">Pick a game to host</p>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                className={`flex flex-col items-center gap-1 rounded-xl border-2 p-2.5 text-xs font-extrabold transition-all ${
+                  selectedGame === 'battleship'
+                    ? 'border-border bg-sky/30 shadow-[0_2px_0_0_var(--color-shadow)] text-ink'
+                    : 'border-border/40 bg-surface text-ink-soft hover:bg-surface-subtle hover:text-ink'
+                }`}
+                onClick={() => setSelectedGame('battleship')}
+              >
+                <span className="text-2xl">🚢</span>
+                <span>Battleship</span>
+                <span className="text-[10px] font-normal text-ink-soft">2–4 Players</span>
+              </button>
+
+              <button
+                type="button"
+                className={`flex flex-col items-center gap-1 rounded-xl border-2 p-2.5 text-xs font-extrabold transition-all ${
+                  selectedGame === 'barricade'
+                    ? 'border-border bg-amber/30 shadow-[0_2px_0_0_var(--color-shadow)] text-ink'
+                    : 'border-border/40 bg-surface text-ink-soft hover:bg-surface-subtle hover:text-ink'
+                }`}
+                onClick={() => setSelectedGame('barricade')}
+              >
+                <span className="text-2xl">🏰</span>
+                <span>Barricade</span>
+                <span className="text-[10px] font-normal text-ink-soft">2–4 Players</span>
+              </button>
+
+              <button
+                type="button"
+                className={`flex flex-col items-center gap-1 rounded-xl border-2 p-2.5 text-xs font-extrabold transition-all ${
+                  selectedGame === 'blindspot'
+                    ? 'border-border bg-coral/30 shadow-[0_2px_0_0_var(--color-shadow)] text-ink'
+                    : 'border-border/40 bg-surface text-ink-soft hover:bg-surface-subtle hover:text-ink'
+                }`}
+                onClick={() => setSelectedGame('blindspot')}
+              >
+                <span className="text-2xl">🎭</span>
+                <span>Blindspot</span>
+                <span className="text-[10px] font-normal text-ink-soft">2–8 Players</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className={`mt-4 grid gap-4 ${invite ? '' : 'sm:grid-cols-2'}`}>
           {invite ? joinForm : createButton}
           {invite ? createButton : joinForm}
@@ -174,11 +235,11 @@ export function Home() {
             <div className="mt-4 pt-3 border-t-2 border-border">
               <button
                 type="button"
-                className="btn-primary w-full text-sm py-2.5"
-                disabled={!canCreate}
-                onClick={() => client.createRoom(trimmed, 'battleship')}
+                className={`w-full text-sm py-2.5 ${selectedGame === 'battleship' ? 'btn-primary' : 'btn-secondary'}`}
+                disabled={waking || state.pending}
+                onClick={() => handleHostGame('battleship')}
               >
-                {state.pending ? 'Creating…' : '🚢 Host Battleship'}
+                {state.pending && selectedGame === 'battleship' ? 'Creating…' : '🚢 Host Battleship'}
               </button>
             </div>
           </div>
@@ -220,11 +281,11 @@ export function Home() {
             <div className="mt-4 pt-3 border-t-2 border-border">
               <button
                 type="button"
-                className="btn-secondary w-full text-sm py-2.5"
-                disabled={!canCreate}
-                onClick={() => client.createRoom(trimmed, 'barricade')}
+                className={`w-full text-sm py-2.5 ${selectedGame === 'barricade' ? 'btn-primary' : 'btn-secondary'}`}
+                disabled={waking || state.pending}
+                onClick={() => handleHostGame('barricade')}
               >
-                {state.pending ? 'Creating…' : '🏰 Host Barricade'}
+                {state.pending && selectedGame === 'barricade' ? 'Creating…' : '🏰 Host Barricade'}
               </button>
             </div>
           </div>
@@ -266,11 +327,11 @@ export function Home() {
             <div className="mt-4 pt-3 border-t-2 border-border">
               <button
                 type="button"
-                className="btn-secondary w-full text-sm py-2.5"
-                disabled={!canCreate}
-                onClick={() => client.createRoom(trimmed, 'blindspot')}
+                className={`w-full text-sm py-2.5 ${selectedGame === 'blindspot' ? 'btn-primary' : 'btn-secondary'}`}
+                disabled={waking || state.pending}
+                onClick={() => handleHostGame('blindspot')}
               >
-                {state.pending ? 'Creating…' : '🎭 Host Blindspot'}
+                {state.pending && selectedGame === 'blindspot' ? 'Creating…' : '🎭 Host Blindspot'}
               </button>
             </div>
           </div>
