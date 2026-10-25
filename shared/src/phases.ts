@@ -40,6 +40,7 @@ export type TimerKind = (typeof TimerKind)[keyof typeof TimerKind];
 export const GameType = {
   BLINDSPOT: 'blindspot',
   BARRICADE: 'barricade',
+  BATTLESHIP: 'battleship',
 } as const;
 export type GameType = (typeof GameType)[keyof typeof GameType];
 
@@ -50,6 +51,15 @@ export const BarricadePhase = {
   GAME_OVER: 'GAME_OVER',
 } as const;
 export type BarricadePhase = (typeof BarricadePhase)[keyof typeof BarricadePhase];
+
+export const BattleshipPhase = {
+  LOBBY: 'LOBBY',
+  PLACEMENT: 'PLACEMENT',
+  PLAYING: 'PLAYING',
+  PAUSED: 'PAUSED',
+  GAME_OVER: 'GAME_OVER',
+} as const;
+export type BattleshipPhase = (typeof BattleshipPhase)[keyof typeof BattleshipPhase];
 
 export const ErrorCode = {
   WRONG_PHASE: 'WRONG_PHASE',
@@ -75,5 +85,10 @@ export const ErrorCode = {
   WALL_TRAPS_PLAYER: 'WALL_TRAPS_PLAYER',
   NO_BARRICADES_LEFT: 'NO_BARRICADES_LEFT',
   INVALID_MOVE: 'INVALID_MOVE',
+  SHIP_OVERLAP: 'SHIP_OVERLAP',
+  SHIP_OUT_OF_BOUNDS: 'SHIP_OUT_OF_BOUNDS',
+  ALREADY_TARGETED: 'ALREADY_TARGETED',
+  CANNOT_TARGET_SELF: 'CANNOT_TARGET_SELF',
+  TARGET_ELIMINATED: 'TARGET_ELIMINATED',
 } as const;
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

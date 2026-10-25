@@ -137,101 +137,141 @@ export function Home() {
           <span className="text-xs font-bold text-ink-soft">Pick a game mode</span>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Game 1: Barricade (King of the Hill) */}
+        <div className="grid gap-6 md:grid-cols-3">
+          {/* Game 1: Battleship (2-4 Players) */}
+          <div className="card flex flex-col justify-between border-2 border-border bg-surface transition-all hover:shadow-[0_6px_0_0_var(--color-shadow)]">
+            <div>
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-3xl">🚢</span>
+                  <div>
+                    <h3 className="text-lg font-black leading-tight">Battleship</h3>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      <span className="rounded-full bg-sky px-2 py-0.5 text-[10px] font-black text-white uppercase">
+                        ⚓ NEW
+                      </span>
+                      <span className="rounded-full bg-surface-subtle border border-border px-2 py-0.5 text-[10px] font-bold text-ink-soft">
+                        2–4 Players
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <p className="mt-3 text-xs text-ink-soft leading-relaxed">
+                Deploy your secret fleet, scan enemy ocean grids, and fire missiles! Multi-target radar lets 2 to 4 admirals battle in an epic free-for-all naval arena.
+              </p>
+
+              <div className="mt-3 rounded-xl border border-border bg-surface-subtle p-2.5 text-xs text-ink-soft space-y-1">
+                <p className="font-bold text-ink">Rules & Highlights:</p>
+                <ul className="list-disc pl-4 space-y-0.5 text-[11px]">
+                  <li>Deploy 5 warships (1-click Randomize available).</li>
+                  <li>Target any rival player's radar on your turn.</li>
+                  <li>Last surviving fleet wins the sea 🏆</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="mt-4 pt-3 border-t-2 border-border">
+              <button
+                type="button"
+                className="btn-primary w-full text-sm py-2.5"
+                disabled={!canCreate}
+                onClick={() => client.createRoom(trimmed, 'battleship')}
+              >
+                {state.pending ? 'Creating…' : '🚢 Host Battleship'}
+              </button>
+            </div>
+          </div>
+
+          {/* Game 2: Barricade (King of the Hill) */}
           <div className="card flex flex-col justify-between border-2 border-border bg-surface transition-all hover:shadow-[0_6px_0_0_var(--color-shadow)]">
             <div>
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2.5">
                   <span className="text-3xl">🏰</span>
                   <div>
-                    <h3 className="text-xl font-black">Barricade: King of the Hill</h3>
-                    <div className="mt-1 flex flex-wrap gap-1.5">
+                    <h3 className="text-lg font-black leading-tight">Barricade</h3>
+                    <div className="mt-1 flex flex-wrap gap-1">
                       <span className="rounded-full bg-amber px-2 py-0.5 text-[10px] font-black text-ink uppercase">
                         ⭐ NEW
                       </span>
                       <span className="rounded-full bg-surface-subtle border border-border px-2 py-0.5 text-[10px] font-bold text-ink-soft">
                         2–4 Players
                       </span>
-                      <span className="rounded-full bg-surface-subtle border border-border px-2 py-0.5 text-[10px] font-bold text-ink-soft">
-                        Strategy & Tactics
-                      </span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <p className="mt-4 text-sm text-ink-soft leading-relaxed">
-                Race your pawn to claim the golden crown at the center of a 9x9 tactical board. Place wall barricades to block rivals and alter the labyrinth — but no player can ever be completely sealed off!
+              <p className="mt-3 text-xs text-ink-soft leading-relaxed">
+                Race your pawn to claim the center crown on a 9x9 tactical board. Place wall barricades to block rivals — but no player can ever be completely sealed off!
               </p>
 
-              <div className="mt-4 rounded-xl border border-border bg-surface-subtle p-3 text-xs text-ink-soft space-y-1">
+              <div className="mt-3 rounded-xl border border-border bg-surface-subtle p-2.5 text-xs text-ink-soft space-y-1">
                 <p className="font-bold text-ink">Rules & Highlights:</p>
-                <ul className="list-disc pl-4 space-y-0.5">
-                  <li>Move 1 step orthogonally or jump over adjacent opponents.</li>
+                <ul className="list-disc pl-4 space-y-0.5 text-[11px]">
+                  <li>Move 1 step orthogonally or jump over opponents.</li>
                   <li>Place 2-segment walls to reroute competitors.</li>
                   <li>First pawn to step onto (4, 4) wins the crown 👑</li>
                 </ul>
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t-2 border-border">
+            <div className="mt-4 pt-3 border-t-2 border-border">
               <button
                 type="button"
-                className="btn-primary w-full text-base py-3"
+                className="btn-secondary w-full text-sm py-2.5"
                 disabled={!canCreate}
                 onClick={() => client.createRoom(trimmed, 'barricade')}
               >
-                {state.pending ? 'Creating…' : '🏰 Host Barricade Room'}
+                {state.pending ? 'Creating…' : '🏰 Host Barricade'}
               </button>
             </div>
           </div>
 
-          {/* Game 2: Blindspot (Who Am I?) */}
+          {/* Game 3: Blindspot (Who Am I?) */}
           <div className="card flex flex-col justify-between border-2 border-border bg-surface transition-all hover:shadow-[0_6px_0_0_var(--color-shadow)]">
             <div>
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2.5">
                   <span className="text-3xl">🎭</span>
                   <div>
-                    <h3 className="text-xl font-black">Blindspot: Who Am I?</h3>
-                    <div className="mt-1 flex flex-wrap gap-1.5">
+                    <h3 className="text-lg font-black leading-tight">Blindspot</h3>
+                    <div className="mt-1 flex flex-wrap gap-1">
                       <span className="rounded-full bg-coral px-2 py-0.5 text-[10px] font-black text-white uppercase">
-                        Party Favorite
+                        Party Classic
                       </span>
                       <span className="rounded-full bg-surface-subtle border border-border px-2 py-0.5 text-[10px] font-bold text-ink-soft">
                         2–8 Players
-                      </span>
-                      <span className="rounded-full bg-surface-subtle border border-border px-2 py-0.5 text-[10px] font-bold text-ink-soft">
-                        Social Deduction
                       </span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <p className="mt-4 text-sm text-ink-soft leading-relaxed">
-                Everyone gets a secret identity card on their forehead. You see everyone's identity except your own! Take turns asking Yes/No questions to deduce who you are and score points before your friends.
+              <p className="mt-3 text-xs text-ink-soft leading-relaxed">
+                Everyone gets a secret identity card on their forehead. You see everyone's identity except your own! Take turns asking Yes/No questions to deduce who you are.
               </p>
 
-              <div className="mt-4 rounded-xl border border-border bg-surface-subtle p-3 text-xs text-ink-soft space-y-1">
+              <div className="mt-3 rounded-xl border border-border bg-surface-subtle p-2.5 text-xs text-ink-soft space-y-1">
                 <p className="font-bold text-ink">Rules & Highlights:</p>
-                <ul className="list-disc pl-4 space-y-0.5">
+                <ul className="list-disc pl-4 space-y-0.5 text-[11px]">
                   <li>Ask 1 question or make 1 guess per turn.</li>
-                  <li>All other players answer simultaneously (Yes, No, Not sure).</li>
+                  <li>All other players answer simultaneously.</li>
                   <li>First to crack their identity earns top points 🏆</li>
                 </ul>
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t-2 border-border">
+            <div className="mt-4 pt-3 border-t-2 border-border">
               <button
                 type="button"
-                className="btn-secondary w-full text-base py-3"
+                className="btn-secondary w-full text-sm py-2.5"
                 disabled={!canCreate}
                 onClick={() => client.createRoom(trimmed, 'blindspot')}
               >
-                {state.pending ? 'Creating…' : '🎭 Host Blindspot Room'}
+                {state.pending ? 'Creating…' : '🎭 Host Blindspot'}
               </button>
             </div>
           </div>

@@ -6,6 +6,7 @@ import { Lobby } from './screens/Lobby';
 import { Game } from './screens/Game';
 import { Results } from './screens/Results';
 import { BarricadeScreen } from './screens/barricade/BarricadeGame';
+import { BattleshipScreen } from './screens/battleship/BattleshipGame';
 
 export function App() {
   const { state } = useGame();
@@ -16,6 +17,8 @@ export function App() {
     screen = <Home />;
   } else if (s.gameType === 'barricade') {
     screen = <BarricadeScreen snapshot={s} />;
+  } else if (s.gameType === 'battleship') {
+    screen = <BattleshipScreen snapshot={s} />;
   } else if (s.phase === Phase.LOBBY) {
     screen = <Lobby snapshot={s} />;
   } else if (s.phase === Phase.ROUND_RESULTS && s.results) {
@@ -39,7 +42,11 @@ export function App() {
             {s && (
               <div className="flex items-center gap-1.5">
                 <span className="inline-flex items-center rounded-full border border-border bg-amber/20 px-2.5 py-0.5 text-xs font-black tracking-wider text-ink uppercase">
-                  {s.gameType === 'barricade' ? '🏰 BARRICADE' : '🎭 BLINDSPOT'}
+                  {s.gameType === 'barricade'
+                    ? '🏰 BARRICADE'
+                    : s.gameType === 'battleship'
+                      ? '🚢 BATTLESHIP'
+                      : '🎭 BLINDSPOT'}
                 </span>
                 <span className="inline-flex items-center rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs font-black tracking-wider text-ink">
                   ROOM {s.code}

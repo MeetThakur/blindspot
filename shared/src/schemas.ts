@@ -4,6 +4,8 @@ import {
   BARRICADE_GRID_SIZE,
   BARRICADE_TURN_TIMEOUT_OPTIONS,
   BARRICADE_WALL_OPTIONS,
+  BATTLESHIP_GRID_SIZE,
+  BATTLESHIP_TURN_TIMEOUT_OPTIONS,
   MAX_GUESS_LENGTH,
   MAX_ITEM_LENGTH,
   MAX_LIST_NAME_LENGTH,
@@ -16,6 +18,7 @@ import {
 import {
   Answer,
   BarricadePhase,
+  BattleshipPhase,
   GameType,
   Phase,
   RoundEndReason,
@@ -35,7 +38,8 @@ export const SkipReasonSchema = z.enum(values(SkipReason));
 export const TimerKindSchema = z.enum(values(TimerKind));
 export const GameTypeSchema = z.enum(values(GameType)).default('blindspot');
 export const BarricadePhaseSchema = z.enum(values(BarricadePhase));
-export const AnyPhaseSchema = z.union([PhaseSchema, BarricadePhaseSchema]);
+export const BattleshipPhaseSchema = z.enum(values(BattleshipPhase));
+export const AnyPhaseSchema = z.union([PhaseSchema, BarricadePhaseSchema, BattleshipPhaseSchema]);
 
 const literalUnion = <T extends readonly (number | null)[]>(opts: T) =>
   z.union(opts.map((o) => z.literal(o)) as unknown as [z.ZodLiteral<number | null>, ...z.ZodLiteral<number | null>[]]);
@@ -120,6 +124,77 @@ export const BarricadeSnapshotSchema = z.object({
 });
 export type BarricadeSnapshot = z.infer<typeof BarricadeSnapshotSchema>;
 
+// ---------- Battleship schemas ----------
+
+export const BattleshipShipPlacementSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  size: z.number().int().min(2).max(5),
+  x: z.number().int().min(0).max(9),
+  y: z.number().int().min(0).max(9),
+  orientation: z.enum(['h', 'v']),
+});
+export type BattleshipShipPlacement = z.infer<typeof BattleshipShipPlacementSchema>;
+
+export const BattleshipShotSchema = z.object({
+  attackerId: z.string(),
+  targetId: z.string(),
+  x: z.number().int().min(0).max(9),
+  y: z.number().int().min(0).max(9),
+  result: z.enum(['hit', 'miss']),
+  sunkShip: z.string().optional(),
+  turn: z.number().int(),
+});
+export type BattleshipShot = z.infer<typeof BattleshipShotSchema>;
+
+export const BattleshipSettingsSchema = z.object({
+  turnTimeoutSec: literalUnion(BATTLESHIP_TURN_TIMEOUT_OPTIONS).default(30),
+  extraShotOnHit: z.boolean().default(false),
+});
+export type BattleshipSettings = z.infer<typeof BattleshipSettingsSchema>;
+
+export const DEFAULT_BATTLESHIP_SETTINGS: BattleshipSettings = {
+  turnTimeoutSec: 30,
+  extraShotOnHit: false,
+};
+
+export const BattleshipSettingsPatchSchema = BattleshipSettingsSchema.partial();
+export type BattleshipSettingsPatch = z.infer<typeof BattleshipSettingsPatchSchema>;
+
+export const BattleshipPlayerSnapshotSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  color: z.string(),
+  connected: z.boolean(),
+  isHost: z.boolean(),
+  afk: z.boolean(),
+  ready: z.boolean(),
+  alive: z.boolean(),
+  score: z.number().int(),
+  shipsRemaining: z.number().int(),
+  sunkShips: z.array(z.string()),
+  /** Revealed only for viewer's own ship during game, or for all players on GAME_OVER! */
+  ships: z.array(BattleshipShipPlacementSchema).optional(),
+  /** Shots fired by any opponent AT this player */
+  shotsReceived: z.array(BattleshipShotSchema),
+});
+export type BattleshipPlayerSnapshot = z.infer<typeof BattleshipPlayerSnapshotSchema>;
+
+export const BattleshipSnapshotSchema = z.object({
+  phase: BattleshipPhaseSchema,
+  gridSize: z.number().int().default(BATTLESHIP_GRID_SIZE),
+  players: z.array(BattleshipPlayerSnapshotSchema),
+  activeId: z.string().nullable(),
+  turnCount: z.number().int(),
+  winnerId: z.string().nullable(),
+  settings: BattleshipSettingsSchema,
+  lastShot: BattleshipShotSchema.nullable().optional(),
+  timer: z
+    .object({ deadline: z.number().nullable(), paused: z.boolean() })
+    .nullable(),
+});
+export type BattleshipSnapshot = z.infer<typeof BattleshipSnapshotSchema>;
+
 // ---------- Lists ----------
 
 export const ListSelectionSchema = z.discriminatedUnion('kind', [
@@ -175,6 +250,20 @@ export const BarricadePlaceWallSchema = z.object({
   x: z.number().int().min(0).max(7),
   y: z.number().int().min(0).max(7),
 });
+export const UpdateBattleshipSettingsSchema = z.object({
+  actionId,
+  settings: BattleshipSettingsPatchSchema,
+});
+export const BattleshipPlaceShipsSchema = z.object({
+  actionId,
+  ships: z.array(BattleshipShipPlacementSchema).min(1).max(5),
+});
+export const BattleshipFireSchema = z.object({
+  actionId,
+  targetId: z.string().min(1).max(64),
+  x: z.number().int().min(0).max(9),
+  y: z.number().int().min(0).max(9),
+});
 export const StartGameSchema = z.object({ actionId });
 export const SubmitQuestionSchema = z.object({
   actionId,
@@ -207,6 +296,9 @@ export const clientEventSchemas = {
   update_barricade_settings: UpdateBarricadeSettingsSchema,
   barricade_move: BarricadeMoveSchema,
   barricade_place_wall: BarricadePlaceWallSchema,
+  update_battleship_settings: UpdateBattleshipSettingsSchema,
+  battleship_place_ships: BattleshipPlaceShipsSchema,
+  battleship_fire: BattleshipFireSchema,
   start_game: StartGameSchema,
   submit_question: SubmitQuestionSchema,
   submit_answer: SubmitAnswerSchema,
@@ -334,6 +426,7 @@ export const RoomSnapshotSchema = z.object({
     .nullable(),
   results: RoundResultsSchema.nullable(),
   barricade: BarricadeSnapshotSchema.nullable().optional(),
+  battleship: BattleshipSnapshotSchema.nullable().optional(),
 });
 export type RoomSnapshot = z.infer<typeof RoomSnapshotSchema>;
 
@@ -356,6 +449,11 @@ export const serverEventNames = [
   'barricade_wall_placed',
   'barricade_turn_changed',
   'barricade_game_over',
+  'battleship_shot_result',
+  'battleship_ship_sunk',
+  'battleship_player_eliminated',
+  'battleship_turn_changed',
+  'battleship_game_over',
 ] as const;
 export type ServerEventName = (typeof serverEventNames)[number];
 

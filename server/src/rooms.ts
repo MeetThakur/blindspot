@@ -1,6 +1,7 @@
 import { randomBytes, randomInt, randomUUID } from 'node:crypto';
 import type { GameType } from '@whoami/shared';
 import type { BarricadeGameState } from './barricade/index.js';
+import type { BattleshipGameState } from './battleship/index.js';
 import { type GameState, generateRoomCode } from './game/index.js';
 
 export interface Room {
@@ -8,6 +9,7 @@ export interface Room {
   gameType: GameType;
   state?: GameState;
   barricadeState?: BarricadeGameState;
+  battleshipState?: BattleshipGameState;
   creatorIp: string;
   /** playerId -> socket id of the player's current connection. */
   sockets: Map<string, string>;

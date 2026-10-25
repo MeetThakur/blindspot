@@ -3,6 +3,8 @@ import {
   ErrorCode,
   type Answer,
   type BarricadeSettingsPatch,
+  type BattleshipSettingsPatch,
+  type BattleshipShipPlacement,
   type GameType,
   type ListSelection,
   type RoomSnapshot,
@@ -199,6 +201,15 @@ export class GameClient {
   }
   barricadePlaceWall(orientation: 'h' | 'v', x: number, y: number): void {
     this.send('barricade_place_wall', { orientation, x, y });
+  }
+  updateBattleshipSettings(settings: BattleshipSettingsPatch): void {
+    this.send('update_battleship_settings', { settings });
+  }
+  battleshipPlaceShips(ships: BattleshipShipPlacement[]): void {
+    this.send('battleship_place_ships', { ships });
+  }
+  battleshipFire(targetId: string, x: number, y: number): void {
+    this.send('battleship_fire', { targetId, x, y });
   }
   startGame = (): void => this.send('start_game');
   ask = (text: string): void => this.send('submit_question', { text });

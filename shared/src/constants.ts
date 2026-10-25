@@ -31,6 +31,26 @@ export const BARRICADE_WALL_OPTIONS = [5, 6, 7, 8, 9, 10] as const;
 export const DEFAULT_BARRICADES_PER_PLAYER = 6;
 export const BARRICADE_TURN_TIMEOUT_OPTIONS = [null, 15, 30, 45, 60] as const;
 
+// ---------- Battleship constants ----------
+export const BATTLESHIP_MIN_PLAYERS = 2;
+export const BATTLESHIP_MAX_PLAYERS = 4;
+export const BATTLESHIP_GRID_SIZE = 10;
+export const BATTLESHIP_TURN_TIMEOUT_OPTIONS = [null, 15, 30, 45, 60] as const;
+
+export interface FleetShipDef {
+  id: string;
+  name: string;
+  size: number;
+}
+
+export const BATTLESHIP_FLEET_DEF: readonly FleetShipDef[] = [
+  { id: 'carrier', name: 'Carrier', size: 5 },
+  { id: 'battleship', name: 'Battleship', size: 4 },
+  { id: 'cruiser', name: 'Cruiser', size: 3 },
+  { id: 'submarine', name: 'Submarine', size: 3 },
+  { id: 'destroyer', name: 'Destroyer', size: 2 },
+] as const;
+
 /** How long a disconnected player is waited for before the game moves on. */
 export const DISCONNECT_GRACE_MS = 60_000;
 /** Fixed display time for revealed answers before the turn auto-advances. */

@@ -20,6 +20,14 @@ import {
   type BarricadeGameEvent,
 } from './barricade/index.js';
 import {
+  createBattleshipRoom,
+  nextBattleshipDeadline,
+  reduceBattleship,
+  snapshotForBattleship,
+  type BattleshipAction,
+  type BattleshipGameEvent,
+} from './battleship/index.js';
+import {
   createRoom,
   nextDeadline,
   reduce,
@@ -138,9 +146,36 @@ export function createGameServer(overrides: Partial<ServerConfig> = {}, clock: (
       }
       return;
     }
+    if (room.gameType === 'battleship' && room.battleshipState) {
+      for (const [playerId, sid] of room.sockets) {
+        if (sid !== skipSocket) io.to(sid).emit('room_updated', snapshotForBattleship(room.battleshipState, playerId, clock()));
+      }
+      return;
+    }
     if (!room.state) return;
     for (const [playerId, sid] of room.sockets) {
       if (sid !== skipSocket) io.to(sid).emit('room_updated', snapshotFor(room.state, playerId, clock()));
+    }
+  }
+
+  function emitBattleshipEvents(room: Room, events: BattleshipGameEvent[]): void {
+    for (const e of events) {
+      switch (e.type) {
+        case 'game_started':
+        case 'battleship_shot_result':
+        case 'battleship_ship_sunk':
+        case 'battleship_player_eliminated':
+        case 'battleship_turn_changed':
+        case 'battleship_game_over':
+        case 'player_disconnected':
+        case 'player_reconnected': {
+          const { type, ...payload } = e;
+          emitToRoom(room, type, payload);
+          break;
+        }
+        default:
+          break;
+      }
     }
   }
 
@@ -317,6 +352,61 @@ export function createGameServer(overrides: Partial<ServerConfig> = {}, clock: (
     return true;
   }
 
+  function scheduleBattleship(room: Room): void {
+    if (room.wake) clearTimeout(room.wake);
+    room.wake = null;
+    if (!room.battleshipState) return;
+    const at = nextBattleshipDeadline(room.battleshipState);
+    if (at === null) return;
+    const lead = at - clock();
+    const delay = lead <= 0 ? 1000 : lead + 5;
+    room.wake = setTimeout(() => {
+      room.wake = null;
+      if (!registry.get(room.code) || !room.battleshipState) return;
+      const t = room.battleshipState.timer;
+      if (t && t.deadline !== null && clock() >= t.deadline) {
+        dispatchBattleship(room, { type: 'expire', seq: t.seq });
+      }
+      dispatchBattleship(room, { type: 'sweep' });
+    }, delay);
+  }
+
+  function dispatchBattleship(
+    room: Room,
+    action: BattleshipAction,
+    socket?: GameSocket,
+    skipSocket?: string,
+  ): boolean {
+    if (!room.battleshipState) return false;
+    const res = reduceBattleship(room.battleshipState, action, {
+      now: clock(),
+      timerScale: config.timerScale,
+    });
+    if (!res.ok) {
+      if (socket) sendError(socket, res.error.code, res.error.message, 'actionId' in action ? action.actionId : undefined);
+      return false;
+    }
+    if (res.duplicate) return true;
+    room.battleshipState = res.state;
+    for (const e of res.events) {
+      if (e.type !== 'player_removed') continue;
+      const selfInitiated = action.type === 'leave' && action.playerId === e.playerId;
+      unbind(
+        room,
+        e.playerId,
+        selfInitiated ? undefined : { code: ErrorCode.KICKED, message: 'You were removed from the room.' },
+      );
+    }
+    emitBattleshipEvents(room, res.events);
+    broadcastSnapshots(room, skipSocket);
+    if (room.battleshipState.players.length === 0) registry.delete(room.code);
+    else {
+      touchEmpty(room);
+      scheduleBattleship(room);
+    }
+    return true;
+  }
+
   function bind(room: Room, socket: GameSocket, playerId: string): void {
     room.sockets.set(playerId, socket.id);
     room.emptySince = null;
@@ -327,6 +417,10 @@ export function createGameServer(overrides: Partial<ServerConfig> = {}, clock: (
     if (room.gameType === 'barricade' && room.barricadeState) {
       const token = room.barricadeState.players.find((p) => p.id === playerId)!.token;
       return { playerId, reconnectToken: token, snapshot: snapshotForBarricade(room.barricadeState, playerId, clock()) };
+    }
+    if (room.gameType === 'battleship' && room.battleshipState) {
+      const token = room.battleshipState.players.find((p) => p.id === playerId)!.token;
+      return { playerId, reconnectToken: token, snapshot: snapshotForBattleship(room.battleshipState, playerId, clock()) };
     }
     const token = room.state!.players.find((p) => p.id === playerId)!.token;
     return { playerId, reconnectToken: token, snapshot: snapshotFor(room.state!, playerId, clock()) };
@@ -393,6 +487,19 @@ export function createGameServer(overrides: Partial<ServerConfig> = {}, clock: (
         registry.add(room);
         bind(room, socket, playerId);
         socket.emit('room_created', sessionPayload(room, playerId));
+      } else if (gameType === 'battleship') {
+        const battleshipState = createBattleshipRoom({
+          code,
+          hostId: playerId,
+          hostName: p.name.replace(/\s+/g, ' '),
+          hostToken: newReconnectToken(),
+          now: clock(),
+          graceMs: config.disconnectGraceMs,
+        });
+        const room: Room = { code, gameType: 'battleship', battleshipState, creatorIp: ip, sockets: new Map(), emptySince: null, wake: null };
+        registry.add(room);
+        bind(room, socket, playerId);
+        socket.emit('room_created', sessionPayload(room, playerId));
       } else {
         const state = createRoom({
           code,
@@ -414,19 +521,29 @@ export function createGameServer(overrides: Partial<ServerConfig> = {}, clock: (
       if (!joinLimiter.take(ip)) reject(ErrorCode.RATE_LIMITED, 'Too many join attempts. Please wait a minute.');
       const room = registry.get(p.roomCode) ?? reject(ErrorCode.ROOM_NOT_FOUND, 'Room not found. Check the code and try again.');
       const playerId = newPlayerId();
-      const ok = room.gameType === 'barricade'
-        ? dispatchBarricade(
-            room,
-            { type: 'join', actionId: p.actionId, playerId, name: p.name, token: newReconnectToken() },
-            socket,
-            socket.id,
-          )
-        : dispatch(
-            room,
-            { type: 'join', actionId: p.actionId, playerId, name: p.name, token: newReconnectToken() },
-            socket,
-            socket.id,
-          );
+      let ok = false;
+      if (room.gameType === 'barricade') {
+        ok = dispatchBarricade(
+          room,
+          { type: 'join', actionId: p.actionId, playerId, name: p.name, token: newReconnectToken() },
+          socket,
+          socket.id,
+        );
+      } else if (room.gameType === 'battleship') {
+        ok = dispatchBattleship(
+          room,
+          { type: 'join', actionId: p.actionId, playerId, name: p.name, token: newReconnectToken() },
+          socket,
+          socket.id,
+        );
+      } else {
+        ok = dispatch(
+          room,
+          { type: 'join', actionId: p.actionId, playerId, name: p.name, token: newReconnectToken() },
+          socket,
+          socket.id,
+        );
+      }
       if (!ok) return;
       bind(room, socket, playerId);
       socket.emit('room_joined', sessionPayload(room, playerId));
@@ -436,7 +553,11 @@ export function createGameServer(overrides: Partial<ServerConfig> = {}, clock: (
       if (socket.data.session) reject(ErrorCode.ALREADY_IN_ROOM, 'Leave your current room first.');
       if (!joinLimiter.take(ip)) reject(ErrorCode.RATE_LIMITED, 'Too many attempts. Please wait a minute.');
       const room = registry.get(p.roomCode) ?? reject(ErrorCode.ROOM_NOT_FOUND, 'That room no longer exists.');
-      const players = room.gameType === 'barricade' ? room.barricadeState?.players ?? [] : room.state?.players ?? [];
+      const players = room.gameType === 'barricade'
+        ? room.barricadeState?.players ?? []
+        : room.gameType === 'battleship'
+          ? room.battleshipState?.players ?? []
+          : room.state?.players ?? [];
       const player = players.find((x) => safeEqual(x.token, p.reconnectToken));
       if (!player) return reject(ErrorCode.SESSION_INVALID, 'Your session has expired. Please rejoin.');
       const old = room.sockets.get(player.id);
@@ -446,6 +567,8 @@ export function createGameServer(overrides: Partial<ServerConfig> = {}, clock: (
       bind(room, socket, player.id);
       if (room.gameType === 'barricade') {
         dispatchBarricade(room, { type: 'reconnect', playerId: player.id }, socket, socket.id);
+      } else if (room.gameType === 'battleship') {
+        dispatchBattleship(room, { type: 'reconnect', playerId: player.id }, socket, socket.id);
       } else {
         dispatch(room, { type: 'reconnect', playerId: player.id }, socket, socket.id);
       }
@@ -461,6 +584,8 @@ export function createGameServer(overrides: Partial<ServerConfig> = {}, clock: (
       const { room, playerId } = current();
       if (room.gameType === 'barricade') {
         dispatchBarricade(room, { type: 'start_game', actionId: p.actionId, playerId }, socket);
+      } else if (room.gameType === 'battleship') {
+        dispatchBattleship(room, { type: 'start_game', actionId: p.actionId, playerId }, socket);
       } else {
         dispatch(room, { type: 'start_game', actionId: p.actionId, playerId }, socket);
       }
@@ -470,6 +595,27 @@ export function createGameServer(overrides: Partial<ServerConfig> = {}, clock: (
       const { room, playerId } = current();
       if (room.gameType === 'barricade') {
         dispatchBarricade(room, { type: 'update_barricade_settings', actionId: p.actionId, playerId, settings: p.settings }, socket);
+      }
+    });
+
+    on('update_battleship_settings', (p) => {
+      const { room, playerId } = current();
+      if (room.gameType === 'battleship') {
+        dispatchBattleship(room, { type: 'update_battleship_settings', actionId: p.actionId, playerId, settings: p.settings }, socket);
+      }
+    });
+
+    on('battleship_place_ships', (p) => {
+      const { room, playerId } = current();
+      if (room.gameType === 'battleship') {
+        dispatchBattleship(room, { type: 'battleship_place_ships', actionId: p.actionId, playerId, ships: p.ships }, socket);
+      }
+    });
+
+    on('battleship_fire', (p) => {
+      const { room, playerId } = current();
+      if (room.gameType === 'battleship') {
+        dispatchBattleship(room, { type: 'battleship_fire', actionId: p.actionId, playerId, targetId: p.targetId, x: p.x, y: p.y }, socket);
       }
     });
 
@@ -531,6 +677,8 @@ export function createGameServer(overrides: Partial<ServerConfig> = {}, clock: (
       const { room, playerId } = current();
       if (room.gameType === 'barricade') {
         dispatchBarricade(room, { type: 'restart_game', actionId: p.actionId, playerId }, socket);
+      } else if (room.gameType === 'battleship') {
+        dispatchBattleship(room, { type: 'restart_game', actionId: p.actionId, playerId }, socket);
       } else {
         dispatch(room, { type: 'restart_round', actionId: p.actionId, playerId }, socket);
       }
@@ -540,6 +688,8 @@ export function createGameServer(overrides: Partial<ServerConfig> = {}, clock: (
       const { room, playerId } = current();
       if (room.gameType === 'barricade') {
         dispatchBarricade(room, { type: 'return_to_lobby', actionId: p.actionId, playerId }, socket);
+      } else if (room.gameType === 'battleship') {
+        dispatchBattleship(room, { type: 'return_to_lobby', actionId: p.actionId, playerId }, socket);
       } else {
         dispatch(room, { type: 'return_to_lobby', actionId: p.actionId, playerId }, socket);
       }
@@ -549,6 +699,8 @@ export function createGameServer(overrides: Partial<ServerConfig> = {}, clock: (
       const { room, playerId } = current();
       if (room.gameType === 'barricade') {
         dispatchBarricade(room, { type: 'leave', actionId: p.actionId, playerId }, socket);
+      } else if (room.gameType === 'battleship') {
+        dispatchBattleship(room, { type: 'leave', actionId: p.actionId, playerId }, socket);
       } else {
         dispatch(room, { type: 'leave', actionId: p.actionId, playerId }, socket);
       }
@@ -558,6 +710,8 @@ export function createGameServer(overrides: Partial<ServerConfig> = {}, clock: (
       const { room, playerId } = current();
       if (room.gameType === 'barricade') {
         dispatchBarricade(room, { type: 'kick', actionId: p.actionId, playerId, targetId: p.playerId }, socket);
+      } else if (room.gameType === 'battleship') {
+        dispatchBattleship(room, { type: 'kick', actionId: p.actionId, playerId, targetId: p.playerId }, socket);
       } else {
         dispatch(room, { type: 'kick', actionId: p.actionId, playerId, targetId: p.playerId }, socket);
       }
@@ -571,6 +725,8 @@ export function createGameServer(overrides: Partial<ServerConfig> = {}, clock: (
       room.sockets.delete(s.playerId);
       if (room.gameType === 'barricade') {
         dispatchBarricade(room, { type: 'disconnect', playerId: s.playerId });
+      } else if (room.gameType === 'battleship') {
+        dispatchBattleship(room, { type: 'disconnect', playerId: s.playerId });
       } else {
         dispatch(room, { type: 'disconnect', playerId: s.playerId });
       }
