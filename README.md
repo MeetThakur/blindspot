@@ -1,8 +1,8 @@
-# PartySpot
+# Playdeck
 
 *Real-time multiplayer browser party games for friends, game nights, and Discord calls.*
 
-PartySpot is an open-source real-time multiplayer party portal featuring 3 distinct games built with zero accounts, zero databases, and instant room code sharing.
+Playdeck is an open-source real-time multiplayer party portal featuring 3 distinct games built with zero accounts, zero databases, and instant room code sharing.
 
 ### 🎮 Featured Games
 1. **Blindspot** (2–5 Players): *Everyone can see who you are, except you.* Ask questions, make guesses, and deduce your secret identity.

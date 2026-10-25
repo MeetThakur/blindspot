@@ -4,7 +4,6 @@ import { storedName } from '../lib/gameClient';
 import { useGame } from '../lib/store';
 import { normalizeRoomCode, roomFromUrl } from '../lib/view';
 import { Spinner } from '../components/ui';
-import { SavedListsManager } from '../components/SavedLists';
 
 export function Home() {
   const { state, client } = useGame();
@@ -67,10 +66,10 @@ export function Home() {
       {/* Portal Hero Banner */}
       <header className="text-center">
         <div className="inline-flex items-center gap-2 rounded-full border-2 border-border bg-amber/30 px-3 py-1 text-xs font-black tracking-wider text-ink mb-3 shadow-[0_2px_0_0_var(--color-shadow)]">
-          🎮 MULTIPLAYER PARTY PORTAL
+          🎮 MULTIPLAYER GAME DECK
         </div>
         <h1 className="text-5xl font-black tracking-tight sm:text-7xl">
-          PARTY<span className="inline-block -rotate-3 rounded-2xl border-2 border-border bg-coral px-3 text-white shadow-[0_4px_0_0_var(--color-shadow)]">SPOT</span>
+          PLAY<span className="inline-block -rotate-3 rounded-2xl border-2 border-border bg-coral px-3 text-white shadow-[0_4px_0_0_var(--color-shadow)]">DECK</span>
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-lg text-ink-soft">
           Instant multiplayer games with your friends and family. Choose a game, create a private room, and jump in!
@@ -277,9 +276,6 @@ export function Home() {
           </div>
         </div>
       </section>
-
-      {/* Saved Lists Manager */}
-      <SavedListsManager />
     </main>
   );
 }

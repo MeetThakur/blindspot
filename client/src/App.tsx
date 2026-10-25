@@ -37,7 +37,7 @@ export function App() {
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-2.5">
           <div className="flex items-center gap-2 sm:gap-3">
             <span className="text-xl font-black tracking-tight select-none">
-              PARTY<span className="rounded-lg bg-coral px-1.5 py-0.5 text-white">SPOT</span>
+              PLAY<span className="rounded-lg bg-coral px-1.5 py-0.5 text-white">DECK</span>
             </span>
             {s && (
               <div className="flex items-center gap-1.5">
