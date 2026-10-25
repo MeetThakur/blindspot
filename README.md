@@ -1,13 +1,16 @@
-# Blindspot
+# PartySpot
 
-*Everyone can see who you are, except you.* (Formerly "WHO AM I?")
+*Real-time multiplayer browser party games for friends, game nights, and Discord calls.*
 
-A real-time party game for 2–5 friends in the browser, made for playing on a Discord call.
-Everyone gets a secret identity (a character, animal, object…). You see everyone's identity **except your own**.
-On your turn, ask one question about yourself (the others answer Yes / No / Not sure) or take one guess. First to crack it scores.
+PartySpot is an open-source real-time multiplayer party portal featuring 3 distinct games built with zero accounts, zero databases, and instant room code sharing.
+
+### 🎮 Featured Games
+1. **Blindspot** (2–5 Players): *Everyone can see who you are, except you.* Ask questions, make guesses, and deduce your secret identity.
+2. **Barricade** (2–4 Players): *King of the Hill Tactical Maze.* Race your pawn to the crown at the center of the grid, roll dice, and strategically deploy barricades to block rivals.
+3. **Battleship** (2–4 Players): *Free-for-All Naval Warfare.* Deploy your 5-warship fleet secretly, then track and fire artillery across multiple opponent radar screens simultaneously.
 
 - No accounts, no database, no paid services. Rooms live in memory, joined with a short code or an invite link (`/?room=ABCDE`).
-- Server-authoritative: the server picks identities, owns every timer, and never sends you your own identity until you've solved it or the round is over.
+- Server-authoritative: the server verifies moves, validates collisions/bounds, owns timers, and enforces fog-of-war privacy snapshots.
 
 ## Contents
 [How it plays](#how-it-plays) · [Repo layout](#repo-layout) · [Setup](#setup) · [Develop](#develop) · [Test](#test) · [Configuration](#configuration) · [Deploy](#deploy) · [Known limitations](#known-limitations) · [Security notes](#security-notes)
