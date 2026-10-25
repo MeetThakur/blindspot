@@ -16,17 +16,6 @@ export function Home() {
   const canCreate = !waking && !state.pending && trimmed.length > 0;
   const canJoin = canCreate && code.length >= 4;
 
-  const handleHostGame = (game: GameType) => {
-    setSelectedGame(game);
-    if (trimmed.length > 0 && !waking && !state.pending) {
-      client.createRoom(trimmed, game);
-    } else {
-      const input = document.getElementById('name');
-      input?.focus();
-      input?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  };
-
   const createButton = (
     <div>
       <button
@@ -129,7 +118,7 @@ export function Home() {
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
-                className={`flex flex-col items-center gap-1 rounded-xl border-2 p-2.5 text-xs font-extrabold transition-all ${
+                className={`flex flex-col items-center gap-1.5 rounded-xl border-2 py-3 px-2 text-xs font-extrabold transition-all ${
                   selectedGame === 'battleship'
                     ? 'border-border bg-sky/30 shadow-[0_2px_0_0_var(--color-shadow)] text-ink'
                     : 'border-border/40 bg-surface text-ink-soft hover:bg-surface-subtle hover:text-ink'
@@ -138,12 +127,11 @@ export function Home() {
               >
                 <span className="text-2xl">🚢</span>
                 <span>Battleship</span>
-                <span className="text-[10px] font-normal text-ink-soft">2–4 Players</span>
               </button>
 
               <button
                 type="button"
-                className={`flex flex-col items-center gap-1 rounded-xl border-2 p-2.5 text-xs font-extrabold transition-all ${
+                className={`flex flex-col items-center gap-1.5 rounded-xl border-2 py-3 px-2 text-xs font-extrabold transition-all ${
                   selectedGame === 'barricade'
                     ? 'border-border bg-amber/30 shadow-[0_2px_0_0_var(--color-shadow)] text-ink'
                     : 'border-border/40 bg-surface text-ink-soft hover:bg-surface-subtle hover:text-ink'
@@ -152,12 +140,11 @@ export function Home() {
               >
                 <span className="text-2xl">🏰</span>
                 <span>Barricade</span>
-                <span className="text-[10px] font-normal text-ink-soft">2–4 Players</span>
               </button>
 
               <button
                 type="button"
-                className={`flex flex-col items-center gap-1 rounded-xl border-2 p-2.5 text-xs font-extrabold transition-all ${
+                className={`flex flex-col items-center gap-1.5 rounded-xl border-2 py-3 px-2 text-xs font-extrabold transition-all ${
                   selectedGame === 'blindspot'
                     ? 'border-border bg-coral/30 shadow-[0_2px_0_0_var(--color-shadow)] text-ink'
                     : 'border-border/40 bg-surface text-ink-soft hover:bg-surface-subtle hover:text-ink'
@@ -166,7 +153,6 @@ export function Home() {
               >
                 <span className="text-2xl">🎭</span>
                 <span>Blindspot</span>
-                <span className="text-[10px] font-normal text-ink-soft">2–8 Players</span>
               </button>
             </div>
           </div>
@@ -199,17 +185,26 @@ export function Home() {
 
         <div className="grid gap-6 md:grid-cols-3">
           {/* Game 1: Battleship (2-4 Players) */}
-          <div className="card flex flex-col justify-between border-2 border-border bg-surface transition-all hover:shadow-[0_6px_0_0_var(--color-shadow)]">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setSelectedGame('battleship')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') setSelectedGame('battleship');
+            }}
+            className={`card flex flex-col justify-between border-2 transition-all cursor-pointer ${
+              selectedGame === 'battleship'
+                ? 'border-sky bg-surface shadow-[0_6px_0_0_var(--color-shadow)] ring-2 ring-sky'
+                : 'border-border bg-surface hover:shadow-[0_4px_0_0_var(--color-shadow)]'
+            }`}
+          >
             <div>
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2.5">
                   <span className="text-3xl">🚢</span>
                   <div>
                     <h3 className="text-lg font-black leading-tight">Battleship</h3>
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      <span className="rounded-full bg-sky px-2 py-0.5 text-[10px] font-black text-white uppercase">
-                        ⚓ NEW
-                      </span>
+                    <div className="mt-1">
                       <span className="rounded-full bg-surface-subtle border border-border px-2 py-0.5 text-[10px] font-bold text-ink-soft">
                         2–4 Players
                       </span>
@@ -231,31 +226,29 @@ export function Home() {
                 </ul>
               </div>
             </div>
-
-            <div className="mt-4 pt-3 border-t-2 border-border">
-              <button
-                type="button"
-                className={`w-full text-sm py-2.5 ${selectedGame === 'battleship' ? 'btn-primary' : 'btn-secondary'}`}
-                disabled={waking || state.pending}
-                onClick={() => handleHostGame('battleship')}
-              >
-                {state.pending && selectedGame === 'battleship' ? 'Creating…' : '🚢 Host Battleship'}
-              </button>
-            </div>
           </div>
 
           {/* Game 2: Barricade (King of the Hill) */}
-          <div className="card flex flex-col justify-between border-2 border-border bg-surface transition-all hover:shadow-[0_6px_0_0_var(--color-shadow)]">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setSelectedGame('barricade')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') setSelectedGame('barricade');
+            }}
+            className={`card flex flex-col justify-between border-2 transition-all cursor-pointer ${
+              selectedGame === 'barricade'
+                ? 'border-amber bg-surface shadow-[0_6px_0_0_var(--color-shadow)] ring-2 ring-amber'
+                : 'border-border bg-surface hover:shadow-[0_4px_0_0_var(--color-shadow)]'
+            }`}
+          >
             <div>
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2.5">
                   <span className="text-3xl">🏰</span>
                   <div>
                     <h3 className="text-lg font-black leading-tight">Barricade</h3>
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      <span className="rounded-full bg-amber px-2 py-0.5 text-[10px] font-black text-ink uppercase">
-                        ⭐ NEW
-                      </span>
+                    <div className="mt-1">
                       <span className="rounded-full bg-surface-subtle border border-border px-2 py-0.5 text-[10px] font-bold text-ink-soft">
                         2–4 Players
                       </span>
@@ -277,31 +270,29 @@ export function Home() {
                 </ul>
               </div>
             </div>
-
-            <div className="mt-4 pt-3 border-t-2 border-border">
-              <button
-                type="button"
-                className={`w-full text-sm py-2.5 ${selectedGame === 'barricade' ? 'btn-primary' : 'btn-secondary'}`}
-                disabled={waking || state.pending}
-                onClick={() => handleHostGame('barricade')}
-              >
-                {state.pending && selectedGame === 'barricade' ? 'Creating…' : '🏰 Host Barricade'}
-              </button>
-            </div>
           </div>
 
           {/* Game 3: Blindspot (Who Am I?) */}
-          <div className="card flex flex-col justify-between border-2 border-border bg-surface transition-all hover:shadow-[0_6px_0_0_var(--color-shadow)]">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setSelectedGame('blindspot')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') setSelectedGame('blindspot');
+            }}
+            className={`card flex flex-col justify-between border-2 transition-all cursor-pointer ${
+              selectedGame === 'blindspot'
+                ? 'border-coral bg-surface shadow-[0_6px_0_0_var(--color-shadow)] ring-2 ring-coral'
+                : 'border-border bg-surface hover:shadow-[0_4px_0_0_var(--color-shadow)]'
+            }`}
+          >
             <div>
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2.5">
                   <span className="text-3xl">🎭</span>
                   <div>
                     <h3 className="text-lg font-black leading-tight">Blindspot</h3>
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      <span className="rounded-full bg-coral px-2 py-0.5 text-[10px] font-black text-white uppercase">
-                        Party Classic
-                      </span>
+                    <div className="mt-1">
                       <span className="rounded-full bg-surface-subtle border border-border px-2 py-0.5 text-[10px] font-bold text-ink-soft">
                         2–8 Players
                       </span>
@@ -322,17 +313,6 @@ export function Home() {
                   <li>First to crack their identity earns top points 🏆</li>
                 </ul>
               </div>
-            </div>
-
-            <div className="mt-4 pt-3 border-t-2 border-border">
-              <button
-                type="button"
-                className={`w-full text-sm py-2.5 ${selectedGame === 'blindspot' ? 'btn-primary' : 'btn-secondary'}`}
-                disabled={waking || state.pending}
-                onClick={() => handleHostGame('blindspot')}
-              >
-                {state.pending && selectedGame === 'blindspot' ? 'Creating…' : '🎭 Host Blindspot'}
-              </button>
             </div>
           </div>
         </div>
