@@ -67,7 +67,7 @@ export function Home() {
       {/* Portal Hero Banner */}
       <header className="text-center">
         <div className="inline-flex items-center gap-2 rounded-full border-2 border-border bg-amber/30 px-3 py-1 text-xs font-black tracking-wider text-ink mb-3 shadow-[0_2px_0_0_var(--color-shadow)]">
-          🎮 MULTIPLAYER GAME DECK
+          MULTIPLAYER GAME DECK
         </div>
         <h1 className="text-5xl font-black tracking-tight sm:text-7xl">
           PLAY<span className="inline-block -rotate-3 rounded-2xl border-2 border-border bg-coral px-3 text-white shadow-[0_4px_0_0_var(--color-shadow)]">DECK</span>
@@ -118,41 +118,38 @@ export function Home() {
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
-                className={`flex flex-col items-center gap-1.5 rounded-xl border-2 py-3 px-2 text-xs font-extrabold transition-all ${
+                className={`flex items-center justify-center rounded-xl border-2 py-3 px-3 text-sm font-black transition-all ${
                   selectedGame === 'battleship'
                     ? 'border-border bg-sky/30 shadow-[0_2px_0_0_var(--color-shadow)] text-ink'
                     : 'border-border/40 bg-surface text-ink-soft hover:bg-surface-subtle hover:text-ink'
                 }`}
                 onClick={() => setSelectedGame('battleship')}
               >
-                <span className="text-2xl">🚢</span>
-                <span>Battleship</span>
+                Battleship
               </button>
 
               <button
                 type="button"
-                className={`flex flex-col items-center gap-1.5 rounded-xl border-2 py-3 px-2 text-xs font-extrabold transition-all ${
+                className={`flex items-center justify-center rounded-xl border-2 py-3 px-3 text-sm font-black transition-all ${
                   selectedGame === 'barricade'
                     ? 'border-border bg-amber/30 shadow-[0_2px_0_0_var(--color-shadow)] text-ink'
                     : 'border-border/40 bg-surface text-ink-soft hover:bg-surface-subtle hover:text-ink'
                 }`}
                 onClick={() => setSelectedGame('barricade')}
               >
-                <span className="text-2xl">🏰</span>
-                <span>Barricade</span>
+                Barricade
               </button>
 
               <button
                 type="button"
-                className={`flex flex-col items-center gap-1.5 rounded-xl border-2 py-3 px-2 text-xs font-extrabold transition-all ${
+                className={`flex items-center justify-center rounded-xl border-2 py-3 px-3 text-sm font-black transition-all ${
                   selectedGame === 'blindspot'
                     ? 'border-border bg-coral/30 shadow-[0_2px_0_0_var(--color-shadow)] text-ink'
                     : 'border-border/40 bg-surface text-ink-soft hover:bg-surface-subtle hover:text-ink'
                 }`}
                 onClick={() => setSelectedGame('blindspot')}
               >
-                <span className="text-2xl">🎭</span>
-                <span>Blindspot</span>
+                Blindspot
               </button>
             </div>
           </div>
@@ -184,7 +181,7 @@ export function Home() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
-          {/* Game 1: Battleship (2-4 Players) */}
+          {/* Game 1: Battleship */}
           <div
             role="button"
             tabIndex={0}
@@ -200,15 +197,12 @@ export function Home() {
           >
             <div>
               <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-3xl">🚢</span>
-                  <div>
-                    <h3 className="text-lg font-black leading-tight">Battleship</h3>
-                    <div className="mt-1">
-                      <span className="rounded-full bg-surface-subtle border border-border px-2 py-0.5 text-[10px] font-bold text-ink-soft">
-                        2–4 Players
-                      </span>
-                    </div>
+                <div>
+                  <h3 className="text-xl font-black tracking-tight">Battleship</h3>
+                  <div className="mt-1">
+                    <span className="rounded-full bg-surface-subtle border border-border px-2.5 py-0.5 text-xs font-bold text-ink-soft">
+                      2–4 Players
+                    </span>
                   </div>
                 </div>
               </div>
@@ -222,13 +216,13 @@ export function Home() {
                 <ul className="list-disc pl-4 space-y-0.5 text-[11px]">
                   <li>Deploy 5 warships (1-click Randomize available).</li>
                   <li>Target any rival player's radar on your turn.</li>
-                  <li>Last surviving fleet wins the sea 🏆</li>
+                  <li>Last surviving fleet wins the sea.</li>
                 </ul>
               </div>
             </div>
           </div>
 
-          {/* Game 2: Barricade (King of the Hill) */}
+          {/* Game 2: Barricade */}
           <div
             role="button"
             tabIndex={0}
@@ -244,15 +238,12 @@ export function Home() {
           >
             <div>
               <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-3xl">🏰</span>
-                  <div>
-                    <h3 className="text-lg font-black leading-tight">Barricade</h3>
-                    <div className="mt-1">
-                      <span className="rounded-full bg-surface-subtle border border-border px-2 py-0.5 text-[10px] font-bold text-ink-soft">
-                        2–4 Players
-                      </span>
-                    </div>
+                <div>
+                  <h3 className="text-xl font-black tracking-tight">Barricade</h3>
+                  <div className="mt-1">
+                    <span className="rounded-full bg-surface-subtle border border-border px-2.5 py-0.5 text-xs font-bold text-ink-soft">
+                      2–4 Players
+                    </span>
                   </div>
                 </div>
               </div>
@@ -266,13 +257,13 @@ export function Home() {
                 <ul className="list-disc pl-4 space-y-0.5 text-[11px]">
                   <li>Move 1 step orthogonally or jump over opponents.</li>
                   <li>Place 2-segment walls to reroute competitors.</li>
-                  <li>First pawn to step onto (4, 4) wins the crown 👑</li>
+                  <li>First pawn to step onto (4, 4) wins the center.</li>
                 </ul>
               </div>
             </div>
           </div>
 
-          {/* Game 3: Blindspot (Who Am I?) */}
+          {/* Game 3: Blindspot */}
           <div
             role="button"
             tabIndex={0}
@@ -288,15 +279,12 @@ export function Home() {
           >
             <div>
               <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-3xl">🎭</span>
-                  <div>
-                    <h3 className="text-lg font-black leading-tight">Blindspot</h3>
-                    <div className="mt-1">
-                      <span className="rounded-full bg-surface-subtle border border-border px-2 py-0.5 text-[10px] font-bold text-ink-soft">
-                        2–8 Players
-                      </span>
-                    </div>
+                <div>
+                  <h3 className="text-xl font-black tracking-tight">Blindspot</h3>
+                  <div className="mt-1">
+                    <span className="rounded-full bg-surface-subtle border border-border px-2.5 py-0.5 text-xs font-bold text-ink-soft">
+                      2–8 Players
+                    </span>
                   </div>
                 </div>
               </div>
@@ -310,7 +298,7 @@ export function Home() {
                 <ul className="list-disc pl-4 space-y-0.5 text-[11px]">
                   <li>Ask 1 question or make 1 guess per turn.</li>
                   <li>All other players answer simultaneously.</li>
-                  <li>First to crack their identity earns top points 🏆</li>
+                  <li>First to deduce their identity scores points.</li>
                 </ul>
               </div>
             </div>

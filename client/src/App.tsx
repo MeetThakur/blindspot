@@ -43,10 +43,10 @@ export function App() {
               <div className="flex items-center gap-1.5">
                 <span className="inline-flex items-center rounded-full border border-border bg-amber/20 px-2.5 py-0.5 text-xs font-black tracking-wider text-ink uppercase">
                   {s.gameType === 'barricade'
-                    ? '🏰 BARRICADE'
+                    ? 'BARRICADE'
                     : s.gameType === 'battleship'
-                      ? '🚢 BATTLESHIP'
-                      : '🎭 BLINDSPOT'}
+                      ? 'BATTLESHIP'
+                      : 'BLINDSPOT'}
                 </span>
                 <span className="inline-flex items-center rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs font-black tracking-wider text-ink">
                   ROOM {s.code}
