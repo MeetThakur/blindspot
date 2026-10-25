@@ -304,8 +304,8 @@ function BattleshipPlacement({
 }) {
   const { client } = useGame();
   const you = battleship.players.find((p) => p.id === snapshot.youId);
-  const [ships, setShips] = useState<BattleshipShipPlacement[]>(() => generateLocalRandomFleet());
-  const [selectedShipIndex, setSelectedShipIndex] = useState<number | null>(null);
+  const [ships, setShips] = useState<BattleshipShipPlacement[]>([]);
+  const [selectedShipIndex, setSelectedShipIndex] = useState<number | null>(0);
   const [orientation, setOrientation] = useState<'h' | 'v'>('h');
   const [hoverCell, setHoverCell] = useState<{ x: number; y: number } | null>(null);
 
