@@ -183,7 +183,7 @@ function BattleshipLobby({
                   {isHost && !isYou && (
                     <button
                       type="button"
-                      onClick={() => client.kickPlayer(p.id)}
+                      onClick={() => client.kick(p.id)}
                       className="rounded-lg border border-border px-2 py-1 text-xs font-bold text-blush hover:bg-blush/10"
                     >
                       Kick
