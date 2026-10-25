@@ -13,31 +13,31 @@
 
 @theme {
   /* Canvas & Surfaces */
-  --color-paper: light-dark(#fdf8ee, #0b0914);
-  --color-surface: light-dark(#ffffff, #161224);
-  --color-surface-hover: light-dark(#f7f3e8, #201a33);
-  --color-surface-subtle: light-dark(#f1ecdf, #1c172d);
+  --color-paper: light-dark(#fafaf9, #090d16);
+  --color-surface: light-dark(#ffffff, #131926);
+  --color-surface-hover: light-dark(#f4f4f5, #1b2334);
+  --color-surface-subtle: light-dark(#f0f2f5, #0f1420);
 
   /* Typography */
-  --color-ink: light-dark(#211c38, #f5f3ff);
-  --color-ink-soft: light-dark(#635c7e, #a59fc4);
-  --color-ink-muted: light-dark(#8d87a6, #746e91);
+  --color-ink: light-dark(#090d16, #f8fafc);
+  --color-ink-soft: light-dark(#4b5563, #94a3b8);
+  --color-ink-muted: light-dark(#6b7280, #64748b);
 
   /* Borders & Shadows */
-  --color-border: light-dark(#211c38, #2f2747);
-  --color-border-subtle: light-dark(#e5dfcd, #241e38);
-  --color-shadow: light-dark(#211c38, #05040a);
+  --color-border: light-dark(#090d16, #243046);
+  --color-border-subtle: light-dark(#e2e8f0, #182232);
+  --color-shadow: light-dark(#090d16, #020408);
 
   /* Accent Colors */
-  --color-coral: #ff724f;
-  --color-sky: #3ba7e6;
-  --color-lime: #76c745;
-  --color-violet: #8e6eff;
-  --color-amber: #f5b72e;
-  --color-mint: light-dark(#d4f4e3, #133324);
-  --color-blush: light-dark(#fde2dc, #3b1612);
+  --color-coral: #ff5e36;
+  --color-sky: #0ea5e9;
+  --color-lime: #22c55e;
+  --color-violet: #8b5cf6;
+  --color-amber: #f59e0b;
+  --color-mint: light-dark(#dcfce7, #064e3b);
+  --color-blush: light-dark(#fee2e2, #7f1d1d);
 
-  --font-display: ui-rounded, "SF Pro Rounded", "Nunito", "Segoe UI", system-ui, sans-serif;
+  --font-display: ui-rounded, "SF Pro Rounded", "Inter", system-ui, -apple-system, sans-serif;
 }
 
 @layer base {
