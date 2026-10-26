@@ -25,8 +25,9 @@ export const DEFAULT_MAX_TURNS_PER_PLAYER = 10;
 // ---------- Barricade constants ----------
 export const BARRICADE_MIN_PLAYERS = 2;
 export const BARRICADE_MAX_PLAYERS = 4;
-export const BARRICADE_GRID_SIZE = 9;
-export const BARRICADE_CENTER = 4; // Center cell (4, 4) in 0-indexed 9x9 grid
+export const BARRICADE_GRID_SIZE_OPTIONS = [9, 11, 13] as const;
+export const BARRICADE_GRID_SIZE = 11;
+export const BARRICADE_CENTER = 5; // Center cell (5, 5) in 0-indexed 11x11 grid
 export const BARRICADE_WALL_OPTIONS = [5, 6, 7, 8, 9, 10] as const;
 export const DEFAULT_BARRICADES_PER_PLAYER = 6;
 export const BARRICADE_TURN_TIMEOUT_OPTIONS = [null, 15, 30, 45, 60] as const;

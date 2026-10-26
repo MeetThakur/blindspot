@@ -218,6 +218,40 @@ export function Spinner({ className = '' }: { className?: string }) {
   );
 }
 
+function SunIcon({ className = 'w-3.5 h-3.5' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2" />
+      <path d="M12 20v2" />
+      <path d="m4.93 4.93 1.41 1.41" />
+      <path d="m17.66 17.66 1.41 1.41" />
+      <path d="M2 12h2" />
+      <path d="M20 12h2" />
+      <path d="m6.34 17.66-1.41 1.41" />
+      <path d="m19.07 4.93-1.41 1.41" />
+    </svg>
+  );
+}
+
+function MoonIcon({ className = 'w-3.5 h-3.5' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+    </svg>
+  );
+}
+
+function MonitorIcon({ className = 'w-3.5 h-3.5' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect width="20" height="14" x="2" y="3" rx="2" />
+      <line x1="8" x2="16" y1="21" y2="21" />
+      <line x1="12" x2="12" y1="17" y2="21" />
+    </svg>
+  );
+}
+
 export function ThemeToggle() {
   const [theme, setTheme] = useState<'system' | 'light' | 'dark'>(() => {
     try {
@@ -257,52 +291,49 @@ export function ThemeToggle() {
     <div
       role="radiogroup"
       aria-label="Theme preference"
-      className="inline-flex items-center rounded-full border-2 border-border bg-surface p-0.5 shadow-[0_2px_0_0_var(--color-shadow)]"
+      className="h-9 inline-flex items-center gap-0.5 rounded-xl border-2 border-border bg-surface p-1 shadow-[0_2px_0_0_var(--color-shadow)]"
     >
       <button
         type="button"
         role="radio"
         aria-checked={theme === 'light'}
         onClick={() => applyTheme('light')}
-        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-black transition ${
+        className={`flex h-full items-center justify-center rounded-lg px-2 text-xs font-black transition ${
           theme === 'light'
             ? 'bg-amber text-[#241f3d] shadow-[0_1px_0_0_var(--color-shadow)]'
-            : 'text-ink-soft hover:text-ink'
+            : 'text-ink-soft hover:text-ink hover:bg-surface-hover'
         }`}
         title="Light theme"
       >
-        <span aria-hidden="true">☀️</span>
-        <span className="hidden sm:inline">Light</span>
+        <SunIcon className="w-4 h-4" />
       </button>
       <button
         type="button"
         role="radio"
         aria-checked={theme === 'dark'}
         onClick={() => applyTheme('dark')}
-        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-black transition ${
+        className={`flex h-full items-center justify-center rounded-lg px-2 text-xs font-black transition ${
           theme === 'dark'
             ? 'bg-violet text-white shadow-[0_1px_0_0_var(--color-shadow)]'
-            : 'text-ink-soft hover:text-ink'
+            : 'text-ink-soft hover:text-ink hover:bg-surface-hover'
         }`}
         title="Dark theme"
       >
-        <span aria-hidden="true">🌙</span>
-        <span className="hidden sm:inline">Dark</span>
+        <MoonIcon className="w-4 h-4" />
       </button>
       <button
         type="button"
         role="radio"
         aria-checked={theme === 'system'}
         onClick={() => applyTheme('system')}
-        className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-black transition ${
+        className={`flex h-full items-center justify-center rounded-lg px-2 text-xs font-black transition ${
           theme === 'system'
-            ? 'bg-surface-hover text-ink shadow-[0_1px_0_0_var(--color-shadow)]'
-            : 'text-ink-soft hover:text-ink'
+            ? 'bg-surface-subtle text-ink shadow-[0_1px_0_0_var(--color-shadow)]'
+            : 'text-ink-soft hover:text-ink hover:bg-surface-hover'
         }`}
         title="Follow system theme"
       >
-        <span aria-hidden="true">💻</span>
-        <span className="hidden sm:inline">Auto</span>
+        <MonitorIcon className="w-4 h-4" />
       </button>
     </div>
   );

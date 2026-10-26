@@ -2,6 +2,7 @@ import { ANSWER_TIMEOUT_OPTIONS, CATEGORY_OPTIONS, MAX_PLAYERS, MIN_PLAYERS, TUR
 import { useState } from 'react';
 import { useGame } from '../lib/store';
 import { defaultStore, useSavedLists } from '../lib/savedLists';
+import { useAuth } from '../lib/authContext';
 import { ListEditor } from '../components/ListEditor';
 import { inviteLink } from '../lib/view';
 import { Avatar, Badge, ConfirmButton, CopyButton } from '../components/ui';
@@ -18,6 +19,7 @@ export function Lobby({ snapshot: s }: { snapshot: RoomSnapshot }) {
   const set = (patch: SettingsPatch) => client.updateSettings(patch);
   const [editorOpen, setEditorOpen] = useState(false);
   const { lists, refresh, store } = useSavedLists(defaultStore());
+  const { cloudLists } = useAuth();
   const useList = (name: string, items: string[]) => {
     client.updateSettings(undefined, { kind: 'custom', name, items });
     setEditorOpen(false);
@@ -104,15 +106,38 @@ export function Lobby({ snapshot: s }: { snapshot: RoomSnapshot }) {
               <div className="mt-3">
                 <p className="label">Or play with your own list</p>
                 <div className="flex flex-wrap gap-2">
+                  {cloudLists.map((cl) => (
+                    <button
+                      key={cl.id}
+                      type="button"
+                      aria-pressed={s.list?.name === cl.title && !currentCategory}
+                      className={`inline-flex items-center gap-1.5 rounded-full border-2 border-ink px-3 py-1.5 text-sm font-bold transition ${
+                        s.list?.name === cl.title && !currentCategory
+                          ? 'bg-violet text-white shadow-[0_2px_0_0_var(--color-ink)]'
+                          : 'bg-surface hover:bg-sky/20'
+                      }`}
+                      onClick={() => useList(cl.title, cl.items)}
+                      title={`Cloud Deck: ${cl.title} (${cl.items.length} items)`}
+                    >
+                      <span className="text-xs">☁️</span>
+                      <span>{cl.title}</span>
+                      <span className="text-xs opacity-70">({cl.items.length})</span>
+                    </button>
+                  ))}
                   {lists.map((l) => (
                     <button
                       key={l.id}
                       type="button"
                       aria-pressed={s.list?.name === l.name && !currentCategory}
-                      className={`rounded-full border-2 border-ink px-3 py-1.5 text-sm font-bold ${s.list?.name === l.name && !currentCategory ? 'bg-violet text-white' : 'bg-surface hover:bg-amber/30'}`}
+                      className={`inline-flex items-center gap-1.5 rounded-full border-2 border-ink px-3 py-1.5 text-sm font-bold transition ${
+                        s.list?.name === l.name && !currentCategory
+                          ? 'bg-violet text-white shadow-[0_2px_0_0_var(--color-ink)]'
+                          : 'bg-surface hover:bg-amber/30'
+                      }`}
                       onClick={() => useList(l.name, l.items)}
                     >
-                      {l.name} ({l.items.length})
+                      <span>{l.name}</span>
+                      <span className="text-xs opacity-70">({l.items.length})</span>
                     </button>
                   ))}
                   <button type="button" className="rounded-full border-2 border-dashed border-ink bg-paper px-3 py-1.5 text-sm font-bold hover:bg-amber/30" onClick={() => setEditorOpen((o) => !o)}>

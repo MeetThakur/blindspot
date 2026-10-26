@@ -17,20 +17,37 @@ Playdeck is an open-source real-time multiplayer party portal featuring 3 distin
 
 ## How it plays
 
-- **Rooms:** 2–5 players, unique names (case-insensitive, max 20 chars). The host picks a built-in category or a custom list, sets the rules, and starts.
-- **A turn:** ask *or* guess, never both. Answers are private until everyone has answered, then revealed together with names.
-  Solved players stay in the game as answerers (so nothing can deadlock) but stop asking.
-- **Guessing:** matching ignores case, accents, punctuation and a leading "the" (`pokemon` matches `Pokémon`).
-  Correct = **+1**. Wrong = your turn and **−1** (configurable, default −1, can be 0); a round score never goes below 0. Optional speed bonus (up to +2, off by default).
-- **A round ends** when only one unsolved player is left, or everyone has solved, or the turn limit is reached
-  (default 10 turns per player, only checked at the end of a full cycle so everyone gets equal turns), or the host ends it.
-  Scores carry across rounds and the starting player rotates each round.
-- **Timers** (host-configurable in the lobby or between rounds only): answer limit (off/15/30/45/60 s), turn limit (off/30/60/90/120 s),
-  and what a late answer does (`HOST_DECIDES` or `AUTO_NOT_SURE`). With timers off nothing happens on its own and the host has **Skip answer** and **Skip turn**,
-  so a room can't get stuck. Three skipped turns in a row flag a player **AFK** so the host can remove them.
-- **Disconnects:** every player has a private reconnect token, so a reload or dropped connection puts you back in your seat. After 60 s away a player stops being waited for
-  (a missing answer counts as "Not sure", their turn is skipped). If the host drops, the game **pauses** (timers too); if they're still gone after 60 s the next connected player becomes host.
-- **Custom lists:** 10–500 unique items, at least one per player, each ≤ 60 characters. Paste, edit, save in your browser, import/export JSON or plain text.
+Playdeck features 3 distinct multiplayer games within a unified room lobby and real-time WebSocket protocol:
+
+### 1. Blindspot (2–5 Players)
+*Deduce who you are before everyone else.*
+- **Setup:** The host selects a built-in category (Pop Culture, Animals, History, Video Games, etc.) or creates a custom list.
+- **Identity Assignment:** Each player is secretly assigned a character or object that *everyone else can see except them*.
+- **The Turn:** Ask a question (e.g., *"Am I fictional?"*) or attempt a direct guess (never both). Other players answer simultaneously with private responses that reveal together once everyone responds.
+- **Scoring & Endgame:** Correct guesses earn points (+1, plus optional speed bonuses). Wrong guesses forfeit the turn and apply a small penalty. Solved players remain as judges so rounds never stall.
+
+### 2. Barricade (2–4 Players)
+*King of the Hill tactical race and maze builder.*
+- **Objective:** First pawn to step onto the golden crown at coordinate **F6 (5, 5)** wins the match.
+- **Board & Movement:** 11×11 grid (121 tiles). On your turn, choose between moving your pawn 1 orthogonal step (jumping over adjacent opponents is allowed) or placing a 2-segment barricade.
+- **Wall Strategy:** Place customizable barricades (configurable from **5 to 10 walls per player** with up/down stepper or direct numeric entry). Walls span between tile intersections horizontally or vertically (`R` or `Space` to rotate).
+- **Fairness Guarantee:** The server enforces pathfinding validation (BFS) to guarantee that placed walls never completely trap any player from reaching the crown.
+
+### 3. Battleship (2–4 Players)
+*Multiplayer naval radar combat with real-time fog of war.*
+- **Fleet Deployment:** Deploy your 5-warship armada across a 10×10 oceanic grid:
+  - Carrier (5 cells), Battleship (4 cells), Cruiser (3 cells), Submarine (3 cells), Destroyer (2 cells).
+  - Intuitive controls: Click/drag with live green/red ghost preview, instant rotation via <kbd>R</kbd>, <kbd>Space</kbd>, right-click, or on-board ship click, plus quick randomize.
+- **Multi-Target Radar Warfare:** Switch between opponents' radar screens using dedicated target tabs. Call artillery strikes on enemy grids with instant hit/miss and ship-sunk feedback.
+- **Turn Rotation & Elimination:** When a fleet is entirely sunk, that player is eliminated from firing but can spectate remaining warfare until the last fleet stands.
+
+---
+
+### Universal Platform Features
+- **No accounts or signups:** Rooms live strictly in memory; join instantly with a 5-letter code or invite link (`/?room=ABCDE`).
+- **Resilient reconnects:** Seamless automatic reconnection tokens preserve your seat, active turns, and game states across browser refreshes or network hiccups.
+- **Timers & host controls:** Host-configurable timers (off / 15s / 30s / 45s / 60s) with automatic skip and AFK protection to keep party games moving smoothly.
+- **Privacy & security:** Server-authoritative engine verifies every move and sends fog-of-war filtered snapshots so secret identities and hidden warships can never be inspected in client network logs.
 
 ## Repo layout
 

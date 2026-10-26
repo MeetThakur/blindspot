@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   ANSWER_TIMEOUT_OPTIONS,
   BARRICADE_GRID_SIZE,
+  BARRICADE_GRID_SIZE_OPTIONS,
   BARRICADE_TURN_TIMEOUT_OPTIONS,
   BARRICADE_WALL_OPTIONS,
   BATTLESHIP_GRID_SIZE,
@@ -66,6 +67,7 @@ export type SettingsPatch = z.infer<typeof SettingsPatchSchema>;
 // ---------- Barricade Settings & Game Schemas ----------
 
 export const BarricadeSettingsSchema = z.object({
+  gridSize: literalUnion(BARRICADE_GRID_SIZE_OPTIONS).default(11),
   barricadesPerPlayer: z.number().int().min(5).max(10),
   turnTimeoutSec: literalUnion(BARRICADE_TURN_TIMEOUT_OPTIONS),
 });
@@ -74,20 +76,21 @@ export const BarricadeSettingsPatchSchema = BarricadeSettingsSchema.partial().st
 export type BarricadeSettingsPatch = z.infer<typeof BarricadeSettingsPatchSchema>;
 
 export const DEFAULT_BARRICADE_SETTINGS: BarricadeSettings = {
+  gridSize: 11,
   barricadesPerPlayer: 6,
   turnTimeoutSec: 30,
 };
 
 export const PositionSchema = z.object({
-  x: z.number().int().min(0).max(BARRICADE_GRID_SIZE - 1),
-  y: z.number().int().min(0).max(BARRICADE_GRID_SIZE - 1),
+  x: z.number().int().min(0).max(15),
+  y: z.number().int().min(0).max(15),
 });
 export type Position = z.infer<typeof PositionSchema>;
 
 export const WallSchema = z.object({
   orientation: z.enum(['h', 'v']),
-  x: z.number().int().min(0).max(BARRICADE_GRID_SIZE - 2),
-  y: z.number().int().min(0).max(BARRICADE_GRID_SIZE - 2),
+  x: z.number().int().min(0).max(14),
+  y: z.number().int().min(0).max(14),
   placedBy: z.string().optional(),
 });
 export type Wall = z.infer<typeof WallSchema>;
@@ -241,14 +244,14 @@ export const UpdateBarricadeSettingsSchema = z.object({
 });
 export const BarricadeMoveSchema = z.object({
   actionId,
-  x: z.number().int().min(0).max(8),
-  y: z.number().int().min(0).max(8),
+  x: z.number().int().min(0).max(14),
+  y: z.number().int().min(0).max(14),
 });
 export const BarricadePlaceWallSchema = z.object({
   actionId,
   orientation: z.enum(['h', 'v']),
-  x: z.number().int().min(0).max(7),
-  y: z.number().int().min(0).max(7),
+  x: z.number().int().min(0).max(13),
+  y: z.number().int().min(0).max(13),
 });
 export const UpdateBattleshipSettingsSchema = z.object({
   actionId,

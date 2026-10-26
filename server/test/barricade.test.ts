@@ -77,20 +77,20 @@ describe('Barricade Pathfinding & Wall Rules', () => {
   });
 
   it('verifies BFS pathfinding and prevents trapping players', () => {
-    const start = { x: 4, y: 8 };
-    const goal = { x: 4, y: 4 };
+    const start = { x: 5, y: 10 };
+    const goal = { x: 5, y: 5 };
 
     expect(hasPath(start, goal, [])).toBe(true);
 
-    // Complete box trapping player at (4, 8)
-    // (4, 8) has neighbors: (4, 7), (3, 8), (5, 8)
-    // Horizontal walls above row 8: (3, 7) and (4, 7) block (3, 7)-(3, 8), (4, 7)-(4, 8), (5, 7)-(5, 8)
-    // Vertical wall to left of col 4: (3, 7) blocks (3, 8)-(4, 8)
-    // Vertical wall to right of col 4: (4, 7) blocks (4, 8)-(5, 8)
+    // Complete box trapping player at (5, 10)
+    // (5, 10) has neighbors: (5, 9), (4, 10), (6, 10)
+    // Horizontal wall above row 10: (4, 9) blocks (4, 9)-(4, 10), (5, 9)-(5, 10)
+    // Vertical wall to left of col 5: (4, 9) blocks (4, 10)-(5, 10)
+    // Vertical wall to right of col 5: (5, 9) blocks (5, 10)-(6, 10)
     const trapWalls = [
-      { orientation: 'h' as const, x: 3, y: 7 },
-      { orientation: 'v' as const, x: 3, y: 7 },
-      { orientation: 'v' as const, x: 4, y: 7 },
+      { orientation: 'h' as const, x: 4, y: 9 },
+      { orientation: 'v' as const, x: 4, y: 9 },
+      { orientation: 'v' as const, x: 5, y: 9 },
     ];
 
     expect(canAllReachGoal([{ position: start }], goal, trapWalls)).toBe(false);
@@ -128,19 +128,19 @@ describe('Barricade Game Engine Integration', () => {
     state = startRes.state;
     expect(state.phase).toBe(BarricadePhase.PLAYING);
     expect(state.activeId).toBe('h1');
-    expect(state.players[0].position).toEqual({ x: 4, y: 8 }); // Bottom
-    expect(state.players[1].position).toEqual({ x: 4, y: 0 }); // Top
+    expect(state.players[0].position).toEqual({ x: 5, y: 10 }); // Bottom
+    expect(state.players[1].position).toEqual({ x: 5, y: 0 }); // Top
 
-    // Player 1 moves Up towards center (4, 7)
+    // Player 1 moves Up towards center (5, 9)
     const moveRes = reduceBarricade(
       state,
-      { type: 'barricade_move', actionId: 'm1', playerId: 'h1', x: 4, y: 7 },
+      { type: 'barricade_move', actionId: 'm1', playerId: 'h1', x: 5, y: 9 },
       ctx,
     );
     expect(moveRes.ok).toBe(true);
     if (!moveRes.ok) return;
     state = moveRes.state;
-    expect(state.players[0].position).toEqual({ x: 4, y: 7 });
+    expect(state.players[0].position).toEqual({ x: 5, y: 9 });
     expect(state.activeId).toBe('p2'); // Turn passed to p2
 
     // Player 2 places a horizontal wall at (1, 1)
@@ -176,16 +176,16 @@ describe('Barricade Game Engine Integration', () => {
     if (!startRes.ok) return;
     state = startRes.state;
 
-    // Place 2 walls boxing in Bottom player (4, 8)
+    // Place 2 walls boxing in Bottom player (5, 10)
     state.walls = [
-      { orientation: 'h', x: 3, y: 7 },
-      { orientation: 'v', x: 3, y: 7 },
+      { orientation: 'h', x: 4, y: 9 },
+      { orientation: 'v', x: 4, y: 9 },
     ];
 
     // Attempting to place the closing 3rd wall that seals them off completely
     const closeRes = reduceBarricade(
       state,
-      { type: 'barricade_place_wall', actionId: 'w_trap', playerId: 'h1', orientation: 'v', x: 4, y: 7 },
+      { type: 'barricade_place_wall', actionId: 'w_trap', playerId: 'h1', orientation: 'v', x: 5, y: 9 },
       ctx,
     );
     expect(closeRes.ok).toBe(false);

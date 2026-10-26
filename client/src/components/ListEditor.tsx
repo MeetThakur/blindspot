@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { MAX_ITEM_LENGTH, MAX_LIST_ITEMS, MAX_LIST_NAME_LENGTH, MAX_LIST_PAYLOAD_CHARS, MIN_LIST_ITEMS, analyzeItems, validateItems } from '@whoami/shared';
 import { download, parseImport, readFileText, slug, toJson, toText } from '../lib/listIO';
 import { type SavedList, type SavedListStore } from '../lib/savedLists';
+import { useAuth } from '../lib/authContext';
 
 interface Props {
   store: SavedListStore;
@@ -19,9 +20,11 @@ export function splitListInput(raw: string): string[] {
 }
 
 export function ListEditor({ store, playerCount, initial, onUse, onSaved, onClose }: Props) {
+  const { user, isConfigured, saveCloudList, setAuthModalOpen } = useAuth();
   const [name, setName] = useState(initial?.name ?? '');
   const [text, setText] = useState(initial ? initial.items.join(', ') : '');
   const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [savingCloud, setSavingCloud] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const rawItems = useMemo(() => splitListInput(text), [text]);
@@ -51,6 +54,19 @@ export function ListEditor({ store, playerCount, initial, onUse, onSaved, onClos
       setNotice({ kind: 'ok', text: `Saved “${res.list.name}” in this browser.` });
       onSaved?.();
     } else setNotice({ kind: 'error', text: res.message });
+  };
+
+  const handleSaveToCloud = async () => {
+    if (!name.trim() || analysis.items.length === 0) return;
+    setSavingCloud(true);
+    const res = await saveCloudList(name.trim(), analysis.items);
+    setSavingCloud(false);
+    if (res.ok) {
+      setNotice({ kind: 'ok', text: `Saved “${name.trim()}” to your Supabase Cloud account!` });
+      onSaved?.();
+    } else {
+      setNotice({ kind: 'error', text: res.error || 'Failed to save to cloud' });
+    }
   };
 
   const importFile = async (file: File | undefined) => {
@@ -162,6 +178,29 @@ export function ListEditor({ store, playerCount, initial, onUse, onSaved, onClos
         <button type="button" className="btn-secondary" disabled={!name.trim() || analysis.items.length === 0} onClick={save}>
           Save in this browser
         </button>
+        {isConfigured && (
+          user ? (
+            <button
+              type="button"
+              className="btn-accent flex items-center gap-1.5"
+              disabled={savingCloud || !name.trim() || analysis.items.length === 0}
+              onClick={handleSaveToCloud}
+            >
+              <span>☁️</span>
+              <span>{savingCloud ? 'Saving...' : 'Save to Cloud'}</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="btn-secondary flex items-center gap-1.5 text-xs text-ink-soft hover:text-ink"
+              onClick={() => setAuthModalOpen(true)}
+              title="Sign in to sync your custom decks across devices"
+            >
+              <span>☁️</span>
+              <span>Log in to sync</span>
+            </button>
+          )
+        )}
         <button type="button" className="btn-secondary" onClick={() => fileRef.current?.click()}>
           Import file
         </button>
@@ -173,7 +212,11 @@ export function ListEditor({ store, playerCount, initial, onUse, onSaved, onClos
           Export text
         </button>
       </div>
-      <p className="text-xs text-ink-soft">Saved lists live in this browser only. They don't sync to other devices, so export a file to move one.</p>
+      <p className="text-xs text-ink-soft">
+        {user
+          ? '☁️ Cloud decks sync across any browser or device you log into. Local lists stay only in this browser.'
+          : "Saved lists live in this browser only. They don't sync to other devices without an account. Log in or create an account to save decks to the Cloud."}
+      </p>
     </section>
   );
 }
