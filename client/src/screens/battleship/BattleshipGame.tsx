@@ -11,8 +11,7 @@ import {
   type RoomSnapshot,
 } from '@whoami/shared';
 import { useGame } from '../../lib/store';
-import { CopyButton } from '../../components/ui';
-import { inviteLink } from '../../lib/view';
+import { HowToPlay, InviteCard, LobbyHeader, SettingsSummary } from '../../components/lobbyParts';
 
 const COLS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 const ROWS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -100,39 +99,13 @@ function BattleshipLobby({
   const canStart = isHost && players.length >= BATTLESHIP_MIN_PLAYERS;
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8">
-      {/* Top Banner */}
-      <div className="card flex flex-col items-center justify-between gap-4 sm:flex-row bg-surface">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl font-black">BATTLESHIP</span>
-            <span className="rounded-full bg-sky/30 px-2.5 py-0.5 text-xs font-black uppercase text-ink">
-              2–4 Players • Naval Combat
-            </span>
-          </div>
-          <p className="mt-1 text-sm text-ink-soft">
-            Deploy your fleet secretly, target enemy ocean grids, and sink all rival warships to dominate the seas!
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="text-right">
-            <p className="text-xs font-bold uppercase tracking-wider text-ink-soft">Room Code</p>
-            <p className="font-mono text-2xl font-black tracking-widest text-coral">{snapshot.code}</p>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <CopyButton text={snapshot.code} label="Copy code" className="btn-secondary py-1 text-xs" />
-            <CopyButton
-              text={inviteLink(window.location.origin, snapshot.code)}
-              label="Copy invite link"
-              className="btn-primary py-1 text-xs"
-            />
-          </div>
-        </div>
-      </div>
+    <main className="mx-auto flex w-full max-w-4xl flex-col gap-5 px-4 py-8">
+      <LobbyHeader title="Battleship Lobby" onLeave={() => client.leave()} />
+      <InviteCard code={snapshot.code} />
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-5 md:grid-cols-[1.3fr_1fr]">
         {/* Players List */}
-        <div className="card md:col-span-2">
+        <div className="card flex flex-col md:self-start">
           <div className="flex items-center justify-between pb-3 border-b-2 border-border">
             <h2 className="text-lg font-black">
               Captains ({players.length}/{BATTLESHIP_MAX_PLAYERS})
@@ -194,11 +167,11 @@ function BattleshipLobby({
             })}
           </div>
 
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="mt-5 flex flex-col gap-2 border-t-2 border-border/30 pt-4">
             {isHost ? (
               <button
                 type="button"
-                className="btn-primary flex-1"
+                className="btn-primary w-full py-3 text-lg"
                 disabled={!canStart}
                 onClick={() => client.startGame()}
               >
@@ -211,20 +184,24 @@ function BattleshipLobby({
                 Waiting for the host to launch fleet deployment…
               </div>
             )}
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => client.leave()}
-            >
-              Leave Room
-            </button>
           </div>
         </div>
 
         {/* Match Settings */}
-        <div className="card flex flex-col gap-4">
+        <div className="card flex flex-col gap-4 md:self-start">
           <h2 className="text-lg font-black border-b-2 border-border pb-2">Naval Settings</h2>
 
+          {!isHost && (
+            <SettingsSummary
+              rows={[
+                ['Shot timer', battleship.settings.turnTimeoutSec === null ? 'No timer' : `${battleship.settings.turnTimeoutSec}s`],
+                ['Extra shot on hit', battleship.settings.extraShotOnHit ? 'On' : 'Off'],
+              ]}
+            />
+          )}
+
+          {isHost && (
+          <>
           <div>
             <label className="text-xs font-black uppercase tracking-wider text-ink-soft">
               Shot Turn Timer
@@ -275,17 +252,19 @@ function BattleshipLobby({
               If enabled, scoring a hit grants an immediate bonus missile salvo!
             </p>
           </div>
+          </>
+          )}
 
-          <div className="rounded-xl border border-border bg-sky/20 p-3 text-xs text-ink-soft mt-auto">
-            <p className="font-bold text-ink">Fleet Composition (5 Ships):</p>
-            <ul className="mt-1 space-y-0.5 pl-2 text-[11px]">
+          <HowToPlay>
+            <p>Place 5 warships in secret, then take turns firing at any rival's radar. Last fleet afloat wins.</p>
+            <ul className="mt-2 space-y-0.5 pl-2 text-xs">
               <li><strong>Carrier</strong>: 5 cells</li>
               <li><strong>Battleship</strong>: 4 cells</li>
               <li><strong>Cruiser</strong>: 3 cells</li>
               <li><strong>Submarine</strong>: 3 cells</li>
               <li><strong>Destroyer</strong>: 2 cells</li>
             </ul>
-          </div>
+          </HowToPlay>
         </div>
       </div>
     </main>

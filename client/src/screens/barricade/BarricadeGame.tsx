@@ -12,8 +12,7 @@ import {
   type Wall,
 } from '@whoami/shared';
 import { useGame } from '../../lib/store';
-import { CopyButton } from '../../components/ui';
-import { inviteLink } from '../../lib/view';
+import { HowToPlay, InviteCard, LobbyHeader, SettingsSummary } from '../../components/lobbyParts';
 
 // -------------------------------------------------------------
 // Helper: local valid moves calculation for instantaneous UI
@@ -159,43 +158,13 @@ function BarricadeLobby({
   };
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8">
-      {/* Top Banner */}
-      <div className="card flex flex-col items-center justify-between gap-4 sm:flex-row bg-surface">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl font-black">🏰 BARRICADE</span>
-            <span className="rounded-full bg-amber/30 px-2.5 py-0.5 text-xs font-black uppercase text-ink">
-              King of the Hill
-            </span>
-          </div>
-          <p className="mt-1 text-sm text-ink-soft">
-            2–4 players race to reach the center crown at F6 (5, 5) on an 11×11 tactical grid. Place barricades to outmaneuver rivals!
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3 sm:gap-5 shrink-0">
-          <div className="text-left sm:text-right">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-ink-soft">Room Code</p>
-            <p className="font-mono text-2xl font-black tracking-widest text-coral">{snapshot.code}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <CopyButton
-              text={snapshot.code}
-              label="Copy code"
-              className="btn-secondary px-3 py-1.5 text-xs whitespace-nowrap"
-            />
-            <CopyButton
-              text={inviteLink(window.location.origin, snapshot.code)}
-              label="Copy invite link"
-              className="btn-primary px-3.5 py-1.5 text-xs whitespace-nowrap"
-            />
-          </div>
-        </div>
-      </div>
+    <main className="mx-auto flex w-full max-w-4xl flex-col gap-5 px-4 py-8">
+      <LobbyHeader title="Barricade Lobby" onLeave={() => client.leave()} />
+      <InviteCard code={snapshot.code} />
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-5 md:grid-cols-[1.3fr_1fr]">
         {/* Players List */}
-        <div className="card md:col-span-2">
+        <div className="card flex flex-col md:self-start">
           <div className="flex items-center justify-between pb-3 border-b-2 border-border">
             <h2 className="text-lg font-black">
               Players ({players.length}/{BARRICADE_MAX_PLAYERS})
@@ -207,7 +176,7 @@ function BarricadeLobby({
             </span>
           </div>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="mt-4 grid gap-3">
             {players.map((p, idx) => {
               const isYou = p.id === snapshot.youId;
               return (
@@ -237,7 +206,7 @@ function BarricadeLobby({
                         )}
                       </div>
                       <p className="text-xs text-ink-soft">
-                        {p.connected ? '🟢 Connected' : '⚪ Disconnected'}
+                        {p.connected ? 'Online' : 'Reconnecting…'}
                       </p>
                     </div>
                   </div>
@@ -256,11 +225,11 @@ function BarricadeLobby({
           </div>
 
           {/* Action buttons */}
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-5 flex flex-col gap-2 border-t-2 border-border/30 pt-4">
             {isHost ? (
               <button
                 type="button"
-                className="btn-primary flex-1"
+                className="btn-primary w-full py-3 text-lg"
                 disabled={!canStart}
                 onClick={() => client.startGame()}
               >
@@ -273,29 +242,28 @@ function BarricadeLobby({
                 Waiting for the host to start the match…
               </div>
             )}
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => client.leave()}
-            >
-              Leave Room
-            </button>
           </div>
         </div>
 
         {/* Match Settings */}
-        <div className="card flex flex-col gap-4">
+        <div className="card flex flex-col gap-4 md:self-start">
           <h2 className="text-lg font-black border-b-2 border-border pb-2">Match Settings</h2>
 
+          {!isHost && (
+            <SettingsSummary
+              rows={[
+                ['Walls each', `${barricade.settings.barricadesPerPlayer}`],
+                ['Turn timer', barricade.settings.turnTimeoutSec === null ? 'No timer' : `${barricade.settings.turnTimeoutSec}s`],
+              ]}
+            />
+          )}
+
+          {isHost && (
+          <>
           <div>
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-black uppercase tracking-wider text-ink-soft">
-                Barricades per Player (5–10)
-              </label>
-              <span className="text-xs font-bold text-ink-soft">
-                Current: <strong className="text-ink">{barricade.settings.barricadesPerPlayer} walls</strong>
-              </span>
-            </div>
+            <label className="text-xs font-black uppercase tracking-wider text-ink-soft">
+              Walls per player (5–10)
+            </label>
 
             {/* Stepper with typed input */}
             <div className="mt-2 flex items-center gap-2">
@@ -334,9 +302,7 @@ function BarricadeLobby({
                 +
               </button>
             </div>
-            <p className="mt-2 text-[11px] text-ink-soft">
-              Each player receives this many walls at the start (5 to 10). Deploy them to block opponents or protect paths.
-            </p>
+            <p className="mt-2 text-[11px] text-ink-soft">Each player starts with this many walls to block opponents.</p>
           </div>
 
           <div>
@@ -356,21 +322,22 @@ function BarricadeLobby({
                       : 'bg-surface hover:bg-surface-subtle text-ink'
                   } ${!isHost ? 'cursor-default opacity-80' : ''}`}
                 >
-                  {t === null ? 'No timer' : `⏱ ${t}s`}
+                  {t === null ? 'No timer' : `${t}s`}
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="rounded-xl border border-border bg-amber/20 p-3 text-xs text-ink-soft mt-auto">
-            <p className="font-bold text-ink">💡 Barricade Rules:</p>
-            <ul className="mt-1 list-disc pl-4 space-y-1">
-              <li>Move 1 step orthogonally or jump over opponents.</li>
-              <li>Or place a 2-segment wall between grid lines.</li>
-              <li>Walls cannot completely block any player from center.</li>
-              <li>First pawn to step on the golden crown at center (F6) wins!</li>
+          </>
+          )}
+
+          <HowToPlay>
+            <ul className="list-disc space-y-1 pl-4">
+              <li>Race to the golden crown at the center of the 11×11 board.</li>
+              <li>Each turn: move 1 step (or jump over a neighbor), or place a 2-segment wall.</li>
+              <li>Walls can never fully block anyone from the center.</li>
             </ul>
-          </div>
+          </HowToPlay>
         </div>
       </div>
     </main>
@@ -455,153 +422,9 @@ function BarricadeBoard({
   };
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-3 py-4 sm:py-6">
-      {/* Top Turn & Status Banner */}
-      <div className="card flex flex-wrap items-center justify-between gap-3 bg-surface p-3 sm:p-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl border-2 border-border bg-amber text-xl shadow-[0_2px_0_0_var(--color-shadow)]">
-            👑
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-base font-black sm:text-lg">
-                {isYourTurn ? (
-                  <span className="text-coral animate-pulse">👉 YOUR TURN!</span>
-                ) : (
-                  <span>{activePlayer?.name}'s Turn</span>
-                )}
-              </span>
-              <span className="text-xs font-bold text-ink-soft">Turn #{barricade.turnCount}</span>
-            </div>
-            <p className="text-xs text-ink-soft">
-              {isYourTurn
-                ? mode === 'move'
-                  ? 'Click a highlighted neighbor tile to advance towards the center.'
-                  : `Hover and click between tiles to place a ${wallOrientation === 'h' ? 'horizontal' : 'vertical'} wall.`
-                : `Waiting for ${activePlayer?.name} to act...`}
-            </p>
-          </div>
-        </div>
-
-        {/* Turn countdown & game phase */}
-        <div className="flex items-center gap-2">
-          {timeLeft !== null && (
-            <div
-              className={`flex items-center gap-1.5 rounded-full border-2 border-border px-3 py-1 font-mono text-xs font-black shadow-[0_2px_0_0_var(--color-shadow)] ${
-                timeLeft <= 5 ? 'bg-blush text-white animate-bounce' : 'bg-surface text-ink'
-              }`}
-            >
-              ⏱ {timeLeft}s
-            </div>
-          )}
-          <span className="rounded-full border border-border bg-surface-subtle px-2.5 py-1 text-xs font-bold">
-            Goal: F6 (5, 5)
-          </span>
-        </div>
-      </div>
-
-      {/* Players Barricade Inventory Cards */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-        {barricade.players.map((p) => {
-          const isActive = p.id === barricade.activeId;
-          const isYou = p.id === snapshot.youId;
-          return (
-            <div
-              key={p.id}
-              className={`rounded-xl border-2 border-border p-2.5 transition-all shadow-[0_2px_0_0_var(--color-shadow)] ${
-                isActive
-                  ? 'bg-amber/20 ring-2 ring-coral scale-[1.02]'
-                  : 'bg-surface'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div
-                    className="h-3.5 w-3.5 shrink-0 rounded-full border border-ink"
-                    style={{ backgroundColor: p.color }}
-                  />
-                  <span className="truncate text-xs font-black">
-                    {p.name} {isYou && '(You)'}
-                  </span>
-                </div>
-                {p.score > 0 && (
-                  <span className="text-[10px] font-black text-amber bg-surface px-1 rounded border border-border">
-                    🏆 {p.score}
-                  </span>
-                )}
-              </div>
-              <div className="mt-1.5 flex items-center justify-between text-xs">
-                <span className="font-bold text-ink-soft">Barricades</span>
-                <span className="font-black text-ink">🧱 {p.barricadesRemaining}</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Action Mode Toggle (When It's Your Turn) */}
-      {isYourTurn && barricade.phase === 'PLAYING' && (
-        <div className="card flex flex-wrap items-center justify-between gap-3 bg-surface p-3.5 shadow-[0_3px_0_0_var(--color-shadow)] border-2 border-coral/40">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-black uppercase tracking-wider text-ink-soft">Your Action:</span>
-            <div className="inline-flex rounded-xl border-2 border-border p-1 bg-surface-subtle gap-1.5">
-              <button
-                type="button"
-                className={`rounded-lg px-4 py-2 text-xs font-black transition-all whitespace-nowrap ${
-                  mode === 'move'
-                    ? 'bg-coral text-white shadow-[0_2px_0_0_var(--color-shadow)]'
-                    : 'text-ink hover:text-coral'
-                }`}
-                onClick={() => setMode('move')}
-              >
-                🚶 Move Pawn
-              </button>
-              <button
-                type="button"
-                disabled={!you || you.barricadesRemaining <= 0}
-                className={`rounded-lg px-4 py-2 text-xs font-black transition-all whitespace-nowrap ${
-                  mode === 'wall'
-                    ? 'bg-coral text-white shadow-[0_2px_0_0_var(--color-shadow)]'
-                    : 'text-ink hover:text-coral'
-                } ${!you || you.barricadesRemaining <= 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
-                onClick={() => setMode('wall')}
-              >
-                🧱 Place Wall ({you?.barricadesRemaining ?? 0} left)
-              </button>
-            </div>
-          </div>
-
-          {mode === 'wall' && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-bold text-ink-soft">Orientation:</span>
-              <div className="inline-flex rounded-lg border-2 border-border p-1 bg-surface-subtle gap-1.5">
-                <button
-                  type="button"
-                  className={`rounded-md px-3 py-1.5 text-xs font-black transition-all whitespace-nowrap ${
-                    wallOrientation === 'h' ? 'bg-amber text-ink shadow-[0_1px_0_0_var(--color-shadow)]' : 'text-ink'
-                  }`}
-                  onClick={() => setWallOrientation('h')}
-                >
-                  ↔ Horizontal
-                </button>
-                <button
-                  type="button"
-                  className={`rounded-md px-3 py-1.5 text-xs font-black transition-all whitespace-nowrap ${
-                    wallOrientation === 'v' ? 'bg-amber text-ink shadow-[0_1px_0_0_var(--color-shadow)]' : 'text-ink'
-                  }`}
-                  onClick={() => setWallOrientation('v')}
-                >
-                  ↕ Vertical
-                </button>
-              </div>
-              <span className="text-[11px] font-mono text-ink-soft bg-surface-subtle px-2 py-1 rounded border border-border whitespace-nowrap">
-                Press <strong>R</strong> or <strong>Space</strong>
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-
+    <main className="mx-auto w-full max-w-5xl px-3 py-4 sm:py-6">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,560px)_minmax(280px,1fr)] lg:items-start">
+        <div className="order-2 lg:order-1">
       {/* 11x11 Tactical Grid Board */}
       <div className="card relative mx-auto w-full max-w-[520px] sm:max-w-[560px] p-3 sm:p-5 bg-surface shadow-[0_6px_0_0_var(--color-shadow)] border-3 border-border">
         {/* Column coordinate labels A - K */}
@@ -819,6 +642,157 @@ function BarricadeBoard({
           >
             Leave Match
           </button>
+        </div>
+      </div>
+
+        </div>
+        <div className="order-1 flex flex-col gap-3 lg:order-2 lg:sticky lg:top-20">
+      {/* Top Turn & Status Banner */}
+      <div className="card flex flex-wrap items-center justify-between gap-3 bg-surface p-3 sm:p-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl border-2 border-border bg-amber text-xl shadow-[0_2px_0_0_var(--color-shadow)]">
+            👑
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-base font-black sm:text-lg">
+                {isYourTurn ? (
+                  <span className="text-coral">Your turn</span>
+                ) : (
+                  <span>{activePlayer?.name}'s Turn</span>
+                )}
+              </span>
+              <span className="text-xs font-bold text-ink-soft">Turn #{barricade.turnCount}</span>
+            </div>
+            <p className="text-xs text-ink-soft">
+              {isYourTurn
+                ? mode === 'move'
+                  ? 'Click a highlighted neighbor tile to advance towards the center.'
+                  : `Hover and click between tiles to place a ${wallOrientation === 'h' ? 'horizontal' : 'vertical'} wall.`
+                : `Waiting for ${activePlayer?.name} to act...`}
+            </p>
+          </div>
+        </div>
+
+        {/* Turn countdown & game phase */}
+        <div className="flex items-center gap-2">
+          {timeLeft !== null && (
+            <div
+              className={`flex items-center gap-1.5 rounded-full border-2 border-border px-3 py-1 font-mono text-xs font-black shadow-[0_2px_0_0_var(--color-shadow)] ${
+                timeLeft <= 5 ? 'bg-blush text-white animate-bounce' : 'bg-surface text-ink'
+              }`}
+            >
+              {timeLeft}s
+            </div>
+          )}
+          <span className="rounded-full border border-border bg-surface-subtle px-2.5 py-1 text-xs font-bold">
+            Goal: F6 (5, 5)
+          </span>
+        </div>
+      </div>
+
+      {/* Players Barricade Inventory Cards */}
+      <div className="grid grid-cols-2 gap-2">
+        {barricade.players.map((p) => {
+          const isActive = p.id === barricade.activeId;
+          const isYou = p.id === snapshot.youId;
+          return (
+            <div
+              key={p.id}
+              className={`rounded-xl border-2 border-border p-2.5 transition-all shadow-[0_2px_0_0_var(--color-shadow)] ${
+                isActive
+                  ? 'bg-amber/20 ring-2 ring-coral'
+                  : 'bg-surface'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div
+                    className="h-3.5 w-3.5 shrink-0 rounded-full border border-ink"
+                    style={{ backgroundColor: p.color }}
+                  />
+                  <span className="truncate text-xs font-black">
+                    {p.name} {isYou && '(You)'}
+                  </span>
+                </div>
+                {p.score > 0 && (
+                  <span className="text-[10px] font-black text-amber bg-surface px-1 rounded border border-border">
+                    {p.score} win{p.score === 1 ? '' : 's'}
+                  </span>
+                )}
+              </div>
+              <div className="mt-1.5 flex items-center justify-between text-xs">
+                <span className="font-bold text-ink-soft">Walls left</span>
+                <span className="font-black text-ink">{p.barricadesRemaining}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Action Mode Toggle (When It's Your Turn) */}
+      {isYourTurn && barricade.phase === 'PLAYING' && (
+        <div className="card flex flex-wrap items-center justify-between gap-3 bg-surface p-3.5 shadow-[0_3px_0_0_var(--color-shadow)] border-2 border-coral/40">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-black uppercase tracking-wider text-ink-soft">Your action</span>
+            <div className="inline-flex rounded-xl border-2 border-border p-1 bg-surface-subtle gap-1.5">
+              <button
+                type="button"
+                className={`rounded-lg px-4 py-2 text-xs font-black transition-all whitespace-nowrap ${
+                  mode === 'move'
+                    ? 'bg-coral text-white shadow-[0_2px_0_0_var(--color-shadow)]'
+                    : 'text-ink hover:text-coral'
+                }`}
+                onClick={() => setMode('move')}
+              >
+                Move pawn
+              </button>
+              <button
+                type="button"
+                disabled={!you || you.barricadesRemaining <= 0}
+                className={`rounded-lg px-4 py-2 text-xs font-black transition-all whitespace-nowrap ${
+                  mode === 'wall'
+                    ? 'bg-coral text-white shadow-[0_2px_0_0_var(--color-shadow)]'
+                    : 'text-ink hover:text-coral'
+                } ${!you || you.barricadesRemaining <= 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
+                onClick={() => setMode('wall')}
+              >
+                Place wall ({you?.barricadesRemaining ?? 0} left)
+              </button>
+            </div>
+          </div>
+
+          {mode === 'wall' && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-bold text-ink-soft">Orientation:</span>
+              <div className="inline-flex rounded-lg border-2 border-border p-1 bg-surface-subtle gap-1.5">
+                <button
+                  type="button"
+                  className={`rounded-md px-3 py-1.5 text-xs font-black transition-all whitespace-nowrap ${
+                    wallOrientation === 'h' ? 'bg-amber text-ink shadow-[0_1px_0_0_var(--color-shadow)]' : 'text-ink'
+                  }`}
+                  onClick={() => setWallOrientation('h')}
+                >
+                  ↔ Horizontal
+                </button>
+                <button
+                  type="button"
+                  className={`rounded-md px-3 py-1.5 text-xs font-black transition-all whitespace-nowrap ${
+                    wallOrientation === 'v' ? 'bg-amber text-ink shadow-[0_1px_0_0_var(--color-shadow)]' : 'text-ink'
+                  }`}
+                  onClick={() => setWallOrientation('v')}
+                >
+                  ↕ Vertical
+                </button>
+              </div>
+              <span className="text-[11px] font-mono text-ink-soft bg-surface-subtle px-2 py-1 rounded border border-border whitespace-nowrap">
+                Press <strong>R</strong> or <strong>Space</strong>
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
         </div>
       </div>
 
