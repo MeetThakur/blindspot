@@ -32,7 +32,7 @@ const GAMES: {
   {
     id: 'blindspot',
     name: 'Blindspot',
-    players: '2–8 players',
+    players: '2–5 players',
     pitch: 'Everyone sees who you are but you.',
     howTo: 'Ask one Yes / No question or make one guess per turn. First to crack their identity scores most.',
     selected: 'border-coral bg-coral/15 ring-2 ring-coral/50',
