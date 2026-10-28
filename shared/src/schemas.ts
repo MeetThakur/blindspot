@@ -72,7 +72,15 @@ export const BarricadeSettingsSchema = z.object({
   turnTimeoutSec: literalUnion(BARRICADE_TURN_TIMEOUT_OPTIONS),
 });
 export type BarricadeSettings = z.infer<typeof BarricadeSettingsSchema>;
-export const BarricadeSettingsPatchSchema = BarricadeSettingsSchema.partial().strict();
+// The patch must not inherit `.default()`s: zod 4 applies them inside `.partial()`, which silently resets omitted fields.
+export const BarricadeSettingsPatchSchema = z
+  .object({
+    gridSize: literalUnion(BARRICADE_GRID_SIZE_OPTIONS),
+    barricadesPerPlayer: z.number().int().min(5).max(10),
+    turnTimeoutSec: literalUnion(BARRICADE_TURN_TIMEOUT_OPTIONS),
+  })
+  .partial()
+  .strict();
 export type BarricadeSettingsPatch = z.infer<typeof BarricadeSettingsPatchSchema>;
 
 export const DEFAULT_BARRICADE_SETTINGS: BarricadeSettings = {
@@ -161,7 +169,13 @@ export const DEFAULT_BATTLESHIP_SETTINGS: BattleshipSettings = {
   extraShotOnHit: false,
 };
 
-export const BattleshipSettingsPatchSchema = BattleshipSettingsSchema.partial();
+// No `.default()`s here: zod 4 applies them inside `.partial()`, so toggling one setting would reset the others.
+export const BattleshipSettingsPatchSchema = z
+  .object({
+    turnTimeoutSec: literalUnion(BATTLESHIP_TURN_TIMEOUT_OPTIONS),
+    extraShotOnHit: z.boolean(),
+  })
+  .partial();
 export type BattleshipSettingsPatch = z.infer<typeof BattleshipSettingsPatchSchema>;
 
 export const BattleshipPlayerSnapshotSchema = z.object({
