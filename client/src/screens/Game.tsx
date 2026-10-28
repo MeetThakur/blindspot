@@ -313,7 +313,7 @@ function TurnPanel({ s }: { s: RoomSnapshot }) {
                     setText(q);
                     inputRef.current?.focus();
                   }}
-                  className="rounded-full border-2 border-border/50 bg-surface-subtle px-2.5 py-1 text-xs font-bold text-ink-soft transition hover:border-border hover:text-ink"
+                  className="rounded-full border-2 border-border/50 bg-surface-subtle px-3 py-2 text-xs font-bold text-ink-soft transition hover:border-border hover:text-ink sm:px-2.5 sm:py-1"
                 >
                   {q}
                 </button>

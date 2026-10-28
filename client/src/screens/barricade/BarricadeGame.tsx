@@ -358,8 +358,17 @@ function BarricadeBoard({
   const [mode, setMode] = useState<'move' | 'wall'>('move');
   const [wallOrientation, setWallOrientation] = useState<'h' | 'v'>('h');
   const [hoverGroove, setHoverGroove] = useState<Position | null>(null);
-
+  // Touch screens: a tap aims the wall (with a preview), a button confirms it.
+  const coarsePointer = useMemo(
+    () => typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches,
+    [],
+  );
+  const [aimGroove, setAimGroove] = useState<Position | null>(null);
   const isYourTurn = barricade.activeId === snapshot.youId;
+
+  useEffect(() => {
+    if (mode !== 'wall' || !isYourTurn) setAimGroove(null);
+  }, [mode, isYourTurn]);
   const isHost = snapshot.hostId === snapshot.youId;
   const you = barricade.players.find((p) => p.id === snapshot.youId);
   const activePlayer = barricade.players.find((p) => p.id === barricade.activeId);
@@ -422,7 +431,7 @@ function BarricadeBoard({
   };
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-3 py-4 sm:py-6">
+    <main className={`mx-auto w-full max-w-5xl px-3 py-4 sm:py-6 ${mode === 'wall' && coarsePointer ? 'pb-40' : ''}`}>
       <div className="grid gap-4 lg:grid-cols-[minmax(0,560px)_minmax(280px,1fr)] lg:items-start">
         <div className="order-2 lg:order-1">
       {/* 11x11 Tactical Grid Board */}
@@ -580,14 +589,15 @@ function BarricadeBoard({
                   const cellPercent = 100 / 11;
                   const left = (gx + 1) * cellPercent;
                   const top = (gy + 1) * cellPercent;
-                  const isHovered = hoverGroove?.x === gx && hoverGroove?.y === gy;
+                  const isHovered =
+                    (!coarsePointer && hoverGroove?.x === gx && hoverGroove?.y === gy) || (aimGroove?.x === gx && aimGroove?.y === gy);
 
                   return (
                     <div
                       key={`groove-${gx}-${gy}`}
                       onMouseEnter={() => setHoverGroove({ x: gx, y: gy })}
                       onMouseLeave={() => setHoverGroove(null)}
-                      onClick={() => handleGrooveClick(gx, gy)}
+                      onClick={() => (coarsePointer ? setAimGroove({ x: gx, y: gy }) : handleGrooveClick(gx, gy))}
                       className="absolute -translate-x-1/2 -translate-y-1/2 h-8 w-8 sm:h-9 sm:w-9 cursor-pointer flex items-center justify-center group"
                       style={{
                         left: `${left}%`,
@@ -650,7 +660,7 @@ function BarricadeBoard({
       {/* Top Turn & Status Banner */}
       <div className="card flex flex-wrap items-center justify-between gap-3 bg-surface p-3 sm:p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl border-2 border-border bg-amber text-xl shadow-[0_2px_0_0_var(--color-shadow)]">
+          <div className="hidden h-11 w-11 items-center justify-center rounded-xl border-2 border-border bg-amber text-xl shadow-[0_2px_0_0_var(--color-shadow)] sm:flex">
             👑
           </div>
           <div>
@@ -668,7 +678,9 @@ function BarricadeBoard({
               {isYourTurn
                 ? mode === 'move'
                   ? 'Click a highlighted neighbor tile to advance towards the center.'
-                  : `Hover and click between tiles to place a ${wallOrientation === 'h' ? 'horizontal' : 'vertical'} wall.`
+                  : (coarsePointer
+                    ? `Tap between tiles to aim a ${wallOrientation === 'h' ? 'horizontal' : 'vertical'} wall, then confirm.`
+                    : `Hover and click between tiles to place a ${wallOrientation === 'h' ? 'horizontal' : 'vertical'} wall.`)
                 : `Waiting for ${activePlayer?.name} to act...`}
             </p>
           </div>
@@ -685,7 +697,7 @@ function BarricadeBoard({
               {timeLeft}s
             </div>
           )}
-          <span className="rounded-full border border-border bg-surface-subtle px-2.5 py-1 text-xs font-bold">
+          <span className="hidden rounded-full border border-border bg-surface-subtle px-2.5 py-1 text-xs font-bold sm:inline">
             Goal: F6 (5, 5)
           </span>
         </div>
@@ -738,7 +750,7 @@ function BarricadeBoard({
             <div className="inline-flex rounded-xl border-2 border-border p-1 bg-surface-subtle gap-1.5">
               <button
                 type="button"
-                className={`rounded-lg px-4 py-2 text-xs font-black transition-all whitespace-nowrap ${
+                className={`min-h-11 rounded-lg px-4 py-2 text-xs font-black transition-all whitespace-nowrap ${
                   mode === 'move'
                     ? 'bg-coral text-white shadow-[0_2px_0_0_var(--color-shadow)]'
                     : 'text-ink hover:text-coral'
@@ -750,7 +762,7 @@ function BarricadeBoard({
               <button
                 type="button"
                 disabled={!you || you.barricadesRemaining <= 0}
-                className={`rounded-lg px-4 py-2 text-xs font-black transition-all whitespace-nowrap ${
+                className={`min-h-11 rounded-lg px-4 py-2 text-xs font-black transition-all whitespace-nowrap ${
                   mode === 'wall'
                     ? 'bg-coral text-white shadow-[0_2px_0_0_var(--color-shadow)]'
                     : 'text-ink hover:text-coral'
@@ -762,13 +774,13 @@ function BarricadeBoard({
             </div>
           </div>
 
-          {mode === 'wall' && (
+          {mode === 'wall' && !coarsePointer && (
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-bold text-ink-soft">Orientation:</span>
               <div className="inline-flex rounded-lg border-2 border-border p-1 bg-surface-subtle gap-1.5">
                 <button
                   type="button"
-                  className={`rounded-md px-3 py-1.5 text-xs font-black transition-all whitespace-nowrap ${
+                  className={`min-h-10 rounded-md px-3 py-1.5 text-xs font-black transition-all whitespace-nowrap ${
                     wallOrientation === 'h' ? 'bg-amber text-ink shadow-[0_1px_0_0_var(--color-shadow)]' : 'text-ink'
                   }`}
                   onClick={() => setWallOrientation('h')}
@@ -777,7 +789,7 @@ function BarricadeBoard({
                 </button>
                 <button
                   type="button"
-                  className={`rounded-md px-3 py-1.5 text-xs font-black transition-all whitespace-nowrap ${
+                  className={`min-h-10 rounded-md px-3 py-1.5 text-xs font-black transition-all whitespace-nowrap ${
                     wallOrientation === 'v' ? 'bg-amber text-ink shadow-[0_1px_0_0_var(--color-shadow)]' : 'text-ink'
                   }`}
                   onClick={() => setWallOrientation('v')}
@@ -785,9 +797,42 @@ function BarricadeBoard({
                   ↕ Vertical
                 </button>
               </div>
-              <span className="text-[11px] font-mono text-ink-soft bg-surface-subtle px-2 py-1 rounded border border-border whitespace-nowrap">
+              <span className="hidden whitespace-nowrap rounded border border-border bg-surface-subtle px-2 py-1 font-mono text-[11px] text-ink-soft md:inline">
                 Press <strong>R</strong> or <strong>Space</strong>
               </span>
+            </div>
+          )}
+
+          {mode === 'wall' && coarsePointer && (
+            // Pinned to the bottom of the screen so it stays reachable while the board is in view.
+            <div className="fixed inset-x-0 bottom-0 z-40 flex flex-col gap-2 border-t-2 border-border bg-surface p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-4px_0_0_var(--color-shadow)]">
+              <div className="grid grid-cols-2 gap-2" role="group" aria-label="Wall orientation">
+                {(['h', 'v'] as const).map((o) => (
+                  <button
+                    key={o}
+                    type="button"
+                    aria-pressed={wallOrientation === o}
+                    onClick={() => setWallOrientation(o)}
+                    className={`min-h-11 rounded-lg border-2 border-border text-sm font-black ${
+                      wallOrientation === o ? 'bg-amber text-ink shadow-[0_2px_0_0_var(--color-shadow)]' : 'bg-surface text-ink'
+                    }`}
+                  >
+                    {o === 'h' ? '↔ Horizontal' : '↕ Vertical'}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                disabled={!aimGroove}
+                onClick={() => {
+                  if (!aimGroove) return;
+                  handleGrooveClick(aimGroove.x, aimGroove.y);
+                  setAimGroove(null);
+                }}
+                className="btn-primary min-h-12 w-full text-base"
+              >
+                {aimGroove ? 'Place wall here' : 'Tap the board to aim a wall'}
+              </button>
             </div>
           )}
         </div>

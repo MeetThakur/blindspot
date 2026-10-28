@@ -57,6 +57,20 @@
   button, input, select, textarea {
     font: inherit;
   }
+  /* Phones: no double-tap zoom delay or grey tap flash, and iOS keeps our text sizes. */
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button, [role="button"], [role="radio"], [role="tab"], summary, a, label {
+    touch-action: manipulation;
+  }
+  /* Keep content clear of notches and the home indicator (viewport-fit=cover). */
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
   :focus-visible {
     outline: 3px solid var(--color-violet);
     outline-offset: 2px;

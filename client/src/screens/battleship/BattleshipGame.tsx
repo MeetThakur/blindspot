@@ -461,12 +461,12 @@ function BattleshipPlacement({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex w-full items-center gap-2 sm:w-auto">
           <button
             type="button"
             disabled={you?.ready}
             onClick={clearBoard}
-            className="btn-secondary py-1.5 px-3 text-xs"
+            className="btn-secondary min-h-11 flex-1 px-3 py-1.5 text-xs sm:flex-none"
           >
             Clear Board
           </button>
@@ -474,7 +474,7 @@ function BattleshipPlacement({
             type="button"
             disabled={you?.ready}
             onClick={randomize}
-            className="btn-secondary py-1.5 px-3 text-xs"
+            className="btn-secondary min-h-11 flex-1 px-3 py-1.5 text-xs sm:flex-none"
           >
             Randomize Fleet
           </button>
@@ -482,7 +482,7 @@ function BattleshipPlacement({
             type="button"
             disabled={you?.ready || ships.length !== BATTLESHIP_FLEET_DEF.length}
             onClick={lockInFleet}
-            className={`py-1.5 px-4 rounded-xl border-2 border-border font-black text-xs transition-all ${
+            className={`min-h-11 flex-1 sm:flex-none py-1.5 px-4 rounded-xl border-2 border-border font-black text-xs transition-all ${
               you?.ready
                 ? 'bg-lime text-ink'
                 : 'btn-primary shadow-[0_2px_0_0_var(--color-shadow)]'
@@ -493,9 +493,9 @@ function BattleshipPlacement({
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-[1fr_320px]">
+      <div className="grid gap-4 md:grid-cols-[1fr_320px] md:gap-6">
         {/* 10x10 Placement Grid with Coordinates */}
-        <div className="card bg-surface p-3 sm:p-5 flex flex-col items-center">
+        <div className="card order-2 flex flex-col items-center bg-surface p-3 sm:p-5 md:order-1">
           <div
             onContextMenu={(e) => {
               e.preventDefault();
@@ -599,25 +599,25 @@ function BattleshipPlacement({
               type="button"
               disabled={you?.ready}
               onClick={() => setOrientation((prev) => (prev === 'h' ? 'v' : 'h'))}
-              className="btn-secondary flex items-center gap-2 py-2 px-4 text-xs font-black shadow-[0_2px_0_0_var(--color-shadow)]"
+              className="btn-secondary flex min-h-11 items-center gap-2 px-4 py-2 text-xs font-black shadow-[0_2px_0_0_var(--color-shadow)]"
             >
               <span>Rotate Ship:</span>
               <span className="rounded bg-paper border border-border px-2 py-0.5 text-coral uppercase tracking-wide">
                 {orientation === 'h' ? '↔ Horizontal' : '↕ Vertical'}
               </span>
             </button>
-            <span className="text-xs text-ink-soft">
+            <span className="hidden text-xs text-ink-soft md:inline">
               Press <kbd className="px-1.5 py-0.5 rounded border border-border bg-surface font-mono font-bold">R</kbd> or <kbd className="px-1.5 py-0.5 rounded border border-border bg-surface font-mono font-bold">Space</kbd> or Right-Click grid
             </span>
           </div>
-          <p className="mt-1 text-xs text-ink-soft text-center">
-            Click any placed warship on the board to rotate it in place!
+          <p className="mt-1 text-center text-xs text-ink-soft">
+            Pick a ship, then tap the ocean to place it. Tap a placed ship to rotate it.
           </p>
         </div>
 
         {/* Fleet Roster & Opponents Ready Status */}
-        <div className="flex flex-col gap-4">
-          <div className="card bg-surface p-4">
+        <div className="contents md:order-2 md:flex md:flex-col md:gap-4">
+          <div className="card order-1 bg-surface p-3 md:order-none md:p-4">
             <div className="flex items-center justify-between border-b-2 border-border pb-2">
               <h3 className="font-black text-sm">Warships ({ships.length}/5)</h3>
               <span className="text-[11px] font-bold text-ink-soft">
@@ -625,7 +625,7 @@ function BattleshipPlacement({
               </span>
             </div>
 
-            <div className="mt-3 space-y-2">
+            <div className="mt-3 grid grid-cols-3 gap-2 md:grid-cols-1">
               {BATTLESHIP_FLEET_DEF.map((def, idx) => {
                 const placed = isShipPlaced(def.id);
                 const isSelected = selectedShipIndex === idx;
@@ -637,7 +637,7 @@ function BattleshipPlacement({
                     onClick={() => {
                       setSelectedShipIndex(isSelected ? null : idx);
                     }}
-                    className={`w-full flex items-center justify-between rounded-xl border-2 border-border p-2.5 text-xs font-black transition-all ${
+                    className={`flex min-h-11 w-full flex-col items-start justify-center gap-0.5 rounded-xl border-2 border-border p-2 text-xs font-black transition-all md:flex-row md:items-center md:justify-between md:gap-0 md:p-2.5 ${
                       isSelected
                         ? 'bg-amber/30 ring-2 ring-coral shadow-[0_2px_0_0_var(--color-shadow)]'
                         : placed
@@ -645,24 +645,28 @@ function BattleshipPlacement({
                           : 'bg-surface text-ink-soft border-dashed hover:bg-surface-subtle'
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <div className={`h-2.5 w-2.5 rounded-full ${placed ? 'bg-lime' : 'bg-ink-soft/40'}`} />
-                      <span>{def.name}</span>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <div className={`hidden h-2.5 w-2.5 shrink-0 rounded-full md:block ${placed ? 'bg-lime' : 'bg-ink-soft/40'}`} />
+                      <span className="truncate">
+                        {placed && <span className="md:hidden">✓ </span>}
+                        {def.name}
+                      </span>
                     </div>
-                    <span className="rounded bg-surface border border-border px-1.5 py-0.5 text-[10px]">
-                      {def.size} cells
+                    <span className="rounded border border-border bg-surface px-1.5 py-0.5 text-[10px] md:ml-1">
+                      {def.size}
+                      <span> cells</span>
                     </span>
                   </button>
                 );
               })}
             </div>
-            <p className="mt-3 text-[11px] text-ink-soft leading-relaxed">
-              Select a ship from the list, hover over the ocean to preview placement, and click to position it.
+            <p className="mt-2 text-[11px] leading-relaxed text-ink-soft md:mt-3">
+              Select a ship, then tap (or hover and click) the ocean to place it.
             </p>
           </div>
 
           {/* Opponents Status */}
-          <div className="card bg-surface p-4">
+          <div className="card order-3 bg-surface p-3 md:order-none md:p-4">
             <h3 className="font-black text-sm border-b-2 border-border pb-2">Fleet Readiness</h3>
             <div className="mt-3 space-y-2">
               {battleship.players.map((p) => (
@@ -760,6 +764,16 @@ function BattleshipCombat({
 
     client.battleshipFire(targetId, x, y);
   };
+
+  // Touch screens: a tap aims, a button fires, so a fat-fingered tap can't waste the turn.
+  const coarsePointer = useMemo(
+    () => typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches,
+    [],
+  );
+  const [aim, setAim] = useState<{ x: number; y: number } | null>(null);
+  useEffect(() => {
+    if (!isYourTurn) setAim(null);
+  }, [isYourTurn]);
 
   // Target radar shot map
   const targetShotsMap = useMemo(() => {
@@ -872,7 +886,7 @@ function BattleshipCombat({
       )}
 
       {/* Target Selector Tabs (2 to 4 Players) */}
-      {opponents.length > 0 && (
+      {opponents.length > 1 && (
         <div className="card flex flex-wrap items-center gap-2 bg-surface p-3">
           <span className="text-xs font-black uppercase tracking-wider text-ink-soft mr-2">
             Target Fleet:
@@ -976,13 +990,15 @@ function BattleshipCombat({
                         <div
                           key={`target-${x}-${y}`}
                           onMouseEnter={() => setHoveredCoordinate(`${COLS[x]}${y + 1}`)}
-                          onClick={() => handleFire(x, y)}
+                          onClick={() => (coarsePointer ? (!shot && isTargetCell ? setAim({ x, y }) : null) : handleFire(x, y))}
                           className={`relative flex items-center justify-center rounded border transition-all text-xs font-black ${
                             shot?.result === 'hit'
                               ? 'border-red-600 bg-red-600 text-white shadow-lg shadow-red-500/50'
                               : shot?.result === 'miss'
                                 ? 'border-sky-800 bg-sky-900/50 text-sky-200'
-                                : isTargetCell
+                                : aim && aim.x === x && aim.y === y
+                                  ? 'border-coral bg-coral/50 ring-2 ring-coral'
+                                  : isTargetCell
                                   ? 'border-sky-900/80 bg-sky-950/60 hover:bg-coral/40 hover:border-coral cursor-crosshair'
                                   : 'border-sky-950/50 bg-sky-950/30'
                           }`}
@@ -998,9 +1014,24 @@ function BattleshipCombat({
             </div>
           </div>
 
+          {coarsePointer && isYourTurn && (
+            <button
+              type="button"
+              disabled={!aim}
+              onClick={() => {
+                if (!aim) return;
+                handleFire(aim.x, aim.y);
+                setAim(null);
+              }}
+              className="btn-primary mt-3 min-h-12 w-full text-base"
+            >
+              {aim ? `Fire at ${COLS[aim.x]}${aim.y + 1}` : 'Tap a coordinate to aim'}
+            </button>
+          )}
+
           <p className="mt-3 text-xs text-ink-soft text-center">
             {isYourTurn
-              ? 'Click any coordinate to fire your missile strike.'
+              ? 'Tap any coordinate to fire your missile strike.'
               : `Waiting for ${activePlayer?.name}'s shot…`}
           </p>
         </div>
@@ -1008,9 +1039,9 @@ function BattleshipCombat({
         {/* Defense: Your Fleet Ocean */}
         <div className="card bg-surface p-3 sm:p-5 flex flex-col items-center">
           <div className="w-full flex items-center justify-between pb-2 border-b-2 border-border mb-3">
-            <h3 className="font-black text-sm text-sky-600 flex items-center gap-1.5">
-              <span>YOUR FLEET DEFENSE</span>
-              <span className="text-ink-soft">(Your Ocean)</span>
+            <h3 className="flex items-center gap-1.5 whitespace-nowrap text-sm font-black text-sky-600">
+              <span>YOUR FLEET</span>
+              <span className="hidden text-ink-soft sm:inline">(Your Ocean)</span>
             </h3>
             <span className="text-xs font-bold text-ink-soft">
               {you ? `${you.shipsRemaining} Ships Alive` : ''}
@@ -1018,7 +1049,7 @@ function BattleshipCombat({
           </div>
 
           {/* 10x10 Defense Grid with Coordinates */}
-          <div className="relative aspect-square w-full max-w-[420px] rounded-xl border-4 border-border bg-[#0a192f] p-2 select-none shadow-2xl">
+          <div className="relative aspect-square w-full max-w-[300px] rounded-xl border-4 border-border bg-[#0a192f] p-2 select-none shadow-2xl sm:max-w-[420px]">
             <div
               className="grid h-full w-full"
               style={{

@@ -38,7 +38,7 @@ export function App() {
       <Toasts />
       <AuthModal />
       <FriendsModal />
-      <header className="sticky top-0 z-30 w-full border-b-2 border-border bg-surface/90 backdrop-blur-md transition-colors">
+      <header className="sticky top-0 z-30 w-full border-b-2 border-border bg-surface/90 pt-[env(safe-area-inset-top)] backdrop-blur-md transition-colors">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-2.5">
           <div className="flex items-center gap-2 sm:gap-3">
             <a
@@ -56,7 +56,7 @@ export function App() {
                   <circle cx="15.5" cy="15.5" r="1.2" fill="currentColor" />
                 </svg>
               </div>
-              <span className={`text-xl font-black tracking-tight ${s ? 'hidden sm:inline' : ''}`}>
+              <span className="hidden text-xl font-black tracking-tight sm:inline">
                 PLAY<span className="text-coral">DECK</span>
               </span>
             </a>
