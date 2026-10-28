@@ -5,6 +5,40 @@ import { useGame } from '../lib/store';
 import { normalizeRoomCode, roomFromUrl } from '../lib/view';
 import { Spinner } from '../components/ui';
 
+const GAMES: {
+  id: GameType;
+  name: string;
+  players: string;
+  pitch: string;
+  howTo: string;
+  selected: string;
+}[] = [
+  {
+    id: 'battleship',
+    name: 'Battleship',
+    players: '2–4 players',
+    pitch: 'Hide your fleet, sink your rivals.',
+    howTo: 'Place 5 warships in secret, then fire at any rival’s radar. Last fleet afloat wins.',
+    selected: 'border-sky bg-sky/15 ring-2 ring-sky/50',
+  },
+  {
+    id: 'barricade',
+    name: 'Barricade',
+    players: '2–4 players',
+    pitch: 'Race to the crown, block rivals with walls.',
+    howTo: 'Step or jump toward the center crown and drop 2-unit walls to slow rivals. First to the crown wins.',
+    selected: 'border-amber bg-amber/15 ring-2 ring-amber/50',
+  },
+  {
+    id: 'blindspot',
+    name: 'Blindspot',
+    players: '2–8 players',
+    pitch: 'Everyone sees who you are but you.',
+    howTo: 'Ask one Yes / No question or make one guess per turn. First to crack their identity scores most.',
+    selected: 'border-coral bg-coral/15 ring-2 ring-coral/50',
+  },
+];
+
 export function Home() {
   const { state, client } = useGame();
   const invite = roomFromUrl(window.location.search);
@@ -15,18 +49,17 @@ export function Home() {
   const trimmed = name.trim();
   const canCreate = !waking && !state.pending && trimmed.length > 0;
   const canJoin = canCreate && code.length >= 4;
+  const game = GAMES.find((g) => g.id === selectedGame)!;
 
   const createButton = (
-    <div>
-      <button
-        type="button"
-        className={`${invite ? 'btn-secondary' : 'btn-primary'} w-full text-base py-3 shadow-[0_4px_0_0_var(--color-shadow)]`}
-        disabled={!canCreate}
-        onClick={() => client.createRoom(trimmed, selectedGame)}
-      >
-        {state.pending ? 'Creating room…' : 'Create a room'}
-      </button>
-    </div>
+    <button
+      type="button"
+      className={`${invite ? 'btn-secondary' : 'btn-primary'} w-full py-3 text-base`}
+      disabled={!canCreate}
+      onClick={() => client.createRoom(trimmed, selectedGame)}
+    >
+      {state.pending ? 'Creating room…' : 'Create a room'}
+    </button>
   );
 
   const joinForm = (
@@ -56,58 +89,44 @@ export function Home() {
           }}
         />
       </div>
-      <button
-        type="submit"
-        className={`${invite ? 'btn-primary' : 'btn-secondary'} px-6`}
-        disabled={!canJoin}
-      >
+      <button type="submit" className={`${invite ? 'btn-primary' : 'btn-secondary'} px-6`} disabled={!canJoin}>
         Join
       </button>
     </form>
   );
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-4 pb-20 pt-8 sm:pt-14">
-      {/* Hero Banner */}
-      <header className="text-center flex flex-col items-center">
-        <div className="inline-flex items-center gap-2 rounded-full border-2 border-border bg-surface-subtle px-3.5 py-1 text-xs font-black tracking-wider text-ink-soft uppercase shadow-sm">
-          Instant Browser Multiplayer
-        </div>
-        <h1 className="mt-4 text-6xl font-black tracking-tight sm:text-8xl">
+    <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 pb-16 pt-8 sm:pt-12">
+      <header className="text-center">
+        <h1 className="text-5xl font-black tracking-tight sm:text-6xl">
           PLAY<span className="text-coral">DECK</span>
         </h1>
-        <p className="mx-auto mt-4 max-w-xl text-lg font-medium text-ink-soft leading-relaxed">
-          Zero accounts, zero setup. Pick a game, create a private room, and share the link with your friends.
+        <p className="mx-auto mt-3 max-w-md font-medium text-ink-soft">
+          Pick a game, make a private room, send the link to your friends. No accounts, no setup.
         </p>
       </header>
 
-      {/* Server wake status */}
-      {waking ? (
-        <div role="status" className="card mx-auto w-full max-w-xl flex items-start gap-3 border-amber bg-amber/15 text-ink">
+      {waking && (
+        <div role="status" className="card flex items-start gap-3 border-amber bg-amber/15 text-ink">
           <Spinner className="mt-1" />
           <div>
             <p className="font-extrabold">Waking up the server…</p>
-            <p className="text-xs text-ink-soft mt-0.5">
+            <p className="mt-0.5 text-xs text-ink-soft">
               Hosting sleeps when inactive to save energy. First connection can take up to a minute.
             </p>
           </div>
         </div>
-      ) : (
-        <p role="status" className="text-center text-xs font-black tracking-wider text-emerald-600 dark:text-emerald-400 uppercase -mt-4">
-          ● Server ready
-        </p>
       )}
 
-      {/* Primary Action Card: Player Setup & Room Launch */}
-      <section className="card mx-auto w-full max-w-xl bg-surface p-6 sm:p-8" aria-label="Start playing">
+      <section className="card flex flex-col gap-5 p-5 sm:p-7" aria-label="Start playing">
         <div>
-          <label className="label text-xs uppercase tracking-wider font-black text-ink-soft" htmlFor="name">
+          <label className="label" htmlFor="name">
             Your name
           </label>
           <div className="relative flex items-center">
             <input
               id="name"
-              className="field pl-3.5 pr-10 text-base font-bold"
+              className="field pl-3.5 pr-14 text-base font-bold"
               value={name}
               maxLength={MAX_NAME_LENGTH}
               autoComplete="nickname"
@@ -125,222 +144,63 @@ export function Home() {
           </div>
         </div>
 
-        {/* Game Mode Selector (When not directly invited to a room) */}
         {!invite && (
-          <div className="mt-5">
-            <label className="label text-xs uppercase tracking-wider font-black text-ink-soft">
-              Choose game to host
-            </label>
-            <div className="grid grid-cols-3 gap-2.5">
-              <button
-                type="button"
-                className={`flex flex-col items-center justify-center rounded-xl border-2 py-3 px-2 text-xs font-black transition-all ${
-                  selectedGame === 'battleship'
-                    ? 'border-sky bg-sky/20 text-ink shadow-[0_3px_0_0_var(--color-shadow)] ring-2 ring-sky/60'
-                    : 'border-border/50 bg-surface-subtle text-ink-soft hover:bg-surface hover:text-ink'
-                }`}
-                onClick={() => setSelectedGame('battleship')}
-              >
-                <span>Battleship</span>
-                <span className="text-[10px] font-bold text-ink-soft/80 mt-0.5">2–4 Players</span>
-              </button>
-
-              <button
-                type="button"
-                className={`flex flex-col items-center justify-center rounded-xl border-2 py-3 px-2 text-xs font-black transition-all ${
-                  selectedGame === 'barricade'
-                    ? 'border-amber bg-amber/20 text-ink shadow-[0_3px_0_0_var(--color-shadow)] ring-2 ring-amber/60'
-                    : 'border-border/50 bg-surface-subtle text-ink-soft hover:bg-surface hover:text-ink'
-                }`}
-                onClick={() => setSelectedGame('barricade')}
-              >
-                <span>Barricade</span>
-                <span className="text-[10px] font-bold text-ink-soft/80 mt-0.5">2–4 Players</span>
-              </button>
-
-              <button
-                type="button"
-                className={`flex flex-col items-center justify-center rounded-xl border-2 py-3 px-2 text-xs font-black transition-all ${
-                  selectedGame === 'blindspot'
-                    ? 'border-coral bg-coral/20 text-ink shadow-[0_3px_0_0_var(--color-shadow)] ring-2 ring-coral/60'
-                    : 'border-border/50 bg-surface-subtle text-ink-soft hover:bg-surface hover:text-ink'
-                }`}
-                onClick={() => setSelectedGame('blindspot')}
-              >
-                <span>Blindspot</span>
-                <span className="text-[10px] font-bold text-ink-soft/80 mt-0.5">2–8 Players</span>
-              </button>
+          <div>
+            <p className="label">Choose a game to host</p>
+            <div className="grid gap-2.5 sm:grid-cols-3" role="radiogroup" aria-label="Game">
+              {GAMES.map((g) => {
+                const on = g.id === selectedGame;
+                return (
+                  <button
+                    key={g.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    onClick={() => setSelectedGame(g.id)}
+                    className={`flex flex-col gap-1 rounded-xl border-2 p-3 text-left transition-all ${
+                      on
+                        ? `${g.selected} shadow-[0_3px_0_0_var(--color-shadow)]`
+                        : 'border-border/40 bg-surface-subtle hover:border-border hover:bg-surface'
+                    }`}
+                  >
+                    <span className="flex items-baseline justify-between gap-2">
+                      <span className="font-black">{g.name}</span>
+                      <span className="text-[11px] font-bold text-ink-soft">{g.players}</span>
+                    </span>
+                    <span className="text-xs leading-snug text-ink-soft">{g.pitch}</span>
+                  </button>
+                );
+              })}
             </div>
+            <p className="mt-2.5 text-xs leading-relaxed text-ink-soft" data-testid="how-to">
+              <span className="font-black text-ink">How {game.name} works: </span>
+              {game.howTo}
+            </p>
           </div>
         )}
 
-        {/* Buttons / Actions */}
-        <div className={`mt-6 grid gap-4 ${invite ? '' : 'sm:grid-cols-2'}`}>
+        <div className={`grid gap-3 ${invite ? '' : 'sm:grid-cols-2'}`}>
           {invite ? joinForm : createButton}
           {invite ? createButton : joinForm}
         </div>
 
         {invite && (
-          <p className="mt-3.5 text-center text-xs font-bold text-ink-soft">
+          <p className="text-center text-xs font-bold text-ink-soft">
             You were invited to room <span className="font-mono font-black text-coral">{invite}</span>. Enter your name and click Join.
           </p>
         )}
 
         {state.formError && (
-          <p role="alert" className="mt-4 rounded-xl border-2 border-rose-500 bg-rose-500/15 p-3 text-xs font-black text-rose-600 dark:text-rose-400">
+          <p role="alert" className="rounded-xl border-2 border-rose-500 bg-rose-500/15 p-3 text-xs font-black text-rose-600 dark:text-rose-400">
             {state.formError}
           </p>
         )}
-      </section>
 
-      {/* Featured Games Showcase */}
-      <section aria-label="Game Catalog" className="pt-4">
-        <div className="flex items-center justify-between mb-5 border-b-2 border-border/60 pb-3">
-          <div>
-            <h2 className="text-2xl font-black tracking-tight">Game Catalog</h2>
-            <p className="text-xs font-bold text-ink-soft mt-0.5">Click any card to select game</p>
-          </div>
-          <span className="text-xs font-black text-coral uppercase tracking-wider">
-            {selectedGame.toUpperCase()} SELECTED
-          </span>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-3">
-          {/* Game 1: Battleship */}
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => setSelectedGame('battleship')}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') setSelectedGame('battleship');
-            }}
-            className={`card flex flex-col justify-between border-2 transition-all cursor-pointer p-0 overflow-hidden ${
-              selectedGame === 'battleship'
-                ? 'border-sky bg-surface shadow-[0_8px_0_0_var(--color-shadow)] ring-2 ring-sky'
-                : 'border-border bg-surface hover:shadow-[0_4px_0_0_var(--color-shadow)]'
-            }`}
-          >
-            <div className="p-5">
-              <div className="flex items-center justify-between pb-3 border-b border-border/40">
-                <h3 className="text-xl font-black tracking-tight">Battleship</h3>
-                <span className="rounded-full bg-sky/20 border border-sky/40 px-2.5 py-0.5 text-xs font-black text-sky-600 dark:text-sky-300">
-                  2–4 Players
-                </span>
-              </div>
-
-              <p className="mt-3 text-xs text-ink-soft leading-relaxed">
-                Secret fleet deployment with multi-target combat radar. Target enemy ocean coordinates and sink rival warships in an epic free-for-all naval arena.
-              </p>
-
-              <div className="mt-4 rounded-xl border border-border/60 bg-surface-subtle p-3 space-y-1.5 text-xs text-ink-soft">
-                <p className="font-black text-ink text-[11px] uppercase tracking-wider">How to play:</p>
-                <ul className="list-disc pl-4 space-y-1 text-[11px]">
-                  <li>Deploy 5 warships (Carrier, Battleship, Cruiser, Sub, Destroyer).</li>
-                  <li>Multi-target radar lets you aim at any opponent.</li>
-                  <li>Last admiral standing wins the sea.</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className={`px-5 py-2.5 text-center text-xs font-black border-t-2 border-border/40 ${
-              selectedGame === 'battleship'
-                ? 'bg-sky text-white'
-                : 'bg-surface-subtle text-ink-soft'
-            }`}>
-              {selectedGame === 'battleship' ? '✓ Selected to Host' : 'Click to select'}
-            </div>
-          </div>
-
-          {/* Game 2: Barricade */}
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => setSelectedGame('barricade')}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') setSelectedGame('barricade');
-            }}
-            className={`card flex flex-col justify-between border-2 transition-all cursor-pointer p-0 overflow-hidden ${
-              selectedGame === 'barricade'
-                ? 'border-amber bg-surface shadow-[0_8px_0_0_var(--color-shadow)] ring-2 ring-amber'
-                : 'border-border bg-surface hover:shadow-[0_4px_0_0_var(--color-shadow)]'
-            }`}
-          >
-            <div className="p-5">
-              <div className="flex items-center justify-between pb-3 border-b border-border/40">
-                <h3 className="text-xl font-black tracking-tight">Barricade</h3>
-                <span className="rounded-full bg-amber/20 border border-amber/40 px-2.5 py-0.5 text-xs font-black text-amber-600 dark:text-amber-300">
-                  2–4 Players
-                </span>
-              </div>
-
-              <p className="mt-3 text-xs text-ink-soft leading-relaxed">
-                Tactical king-of-the-hill race on a 9x9 board. Move toward the center crown and place wall barricades to divert rivals into dead ends.
-              </p>
-
-              <div className="mt-4 rounded-xl border border-border/60 bg-surface-subtle p-3 space-y-1.5 text-xs text-ink-soft">
-                <p className="font-black text-ink text-[11px] uppercase tracking-wider">How to play:</p>
-                <ul className="list-disc pl-4 space-y-1 text-[11px]">
-                  <li>Step 1 cell or jump over adjacent pawns.</li>
-                  <li>Place 2-unit walls to reroute competitors.</li>
-                  <li>First pawn to step on the center crown wins.</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className={`px-5 py-2.5 text-center text-xs font-black border-t-2 border-border/40 ${
-              selectedGame === 'barricade'
-                ? 'bg-amber text-ink'
-                : 'bg-surface-subtle text-ink-soft'
-            }`}>
-              {selectedGame === 'barricade' ? '✓ Selected to Host' : 'Click to select'}
-            </div>
-          </div>
-
-          {/* Game 3: Blindspot */}
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => setSelectedGame('blindspot')}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') setSelectedGame('blindspot');
-            }}
-            className={`card flex flex-col justify-between border-2 transition-all cursor-pointer p-0 overflow-hidden ${
-              selectedGame === 'blindspot'
-                ? 'border-coral bg-surface shadow-[0_8px_0_0_var(--color-shadow)] ring-2 ring-coral'
-                : 'border-border bg-surface hover:shadow-[0_4px_0_0_var(--color-shadow)]'
-            }`}
-          >
-            <div className="p-5">
-              <div className="flex items-center justify-between pb-3 border-b border-border/40">
-                <h3 className="text-xl font-black tracking-tight">Blindspot</h3>
-                <span className="rounded-full bg-coral/20 border border-coral/40 px-2.5 py-0.5 text-xs font-black text-coral">
-                  2–8 Players
-                </span>
-              </div>
-
-              <p className="mt-3 text-xs text-ink-soft leading-relaxed">
-                Everyone can see who you are, except you. Take turns asking Yes/No questions or taking a guess to deduce your secret identity.
-              </p>
-
-              <div className="mt-4 rounded-xl border border-border/60 bg-surface-subtle p-3 space-y-1.5 text-xs text-ink-soft">
-                <p className="font-black text-ink text-[11px] uppercase tracking-wider">How to play:</p>
-                <ul className="list-disc pl-4 space-y-1 text-[11px]">
-                  <li>Ask 1 question or make 1 guess per turn.</li>
-                  <li>Other players answer Yes, No, or Not Sure.</li>
-                  <li>First to crack their identity earns top score.</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className={`px-5 py-2.5 text-center text-xs font-black border-t-2 border-border/40 ${
-              selectedGame === 'blindspot'
-                ? 'bg-coral text-white'
-                : 'bg-surface-subtle text-ink-soft'
-            }`}>
-              {selectedGame === 'blindspot' ? '✓ Selected to Host' : 'Click to select'}
-            </div>
-          </div>
-        </div>
+        {!waking && (
+          <p role="status" className="text-center text-[11px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+            ● Server ready
+          </p>
+        )}
       </section>
     </main>
   );

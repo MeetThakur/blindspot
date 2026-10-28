@@ -87,8 +87,9 @@ describe('Lobby', () => {
     setup(snapshot({ youId: 'b' }));
     expect(screen.getByText(/Waiting for the host to start/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Start game' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Animals' })).toBeDisabled();
-    expect(screen.getByLabelText('Turns per player')).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Animals' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Turns per player')).not.toBeInTheDocument();
+    expect(within(screen.getByTestId('settings-summary')).getByText(/turns each/)).toBeInTheDocument();
   });
 
   it('renders hostile names as plain text', () => {

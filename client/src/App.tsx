@@ -56,13 +56,13 @@ export function App() {
                   <circle cx="15.5" cy="15.5" r="1.2" fill="currentColor" />
                 </svg>
               </div>
-              <span className="text-xl font-black tracking-tight">
+              <span className={`text-xl font-black tracking-tight ${s ? 'hidden sm:inline' : ''}`}>
                 PLAY<span className="text-coral">DECK</span>
               </span>
             </a>
             {s && (
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="inline-flex h-9 items-center rounded-xl border-2 border-border bg-surface-subtle px-2.5 text-xs font-black tracking-wider text-ink uppercase shadow-[0_2px_0_0_var(--color-shadow)]">
+                <span className="hidden h-9 items-center rounded-xl border-2 border-border bg-surface-subtle px-2.5 sm:inline-flex text-xs font-black tracking-wider text-ink uppercase shadow-[0_2px_0_0_var(--color-shadow)]">
                   {s.gameType === 'barricade'
                     ? 'BARRICADE'
                     : s.gameType === 'battleship'

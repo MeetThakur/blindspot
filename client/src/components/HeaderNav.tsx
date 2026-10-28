@@ -134,7 +134,7 @@ export function HeaderNav() {
             /* Log In CTA Button */
             <button
               type="button"
-              className="h-9 px-3.5 flex items-center gap-1.5 rounded-xl border-2 border-border bg-surface-subtle hover:bg-surface-hover text-xs font-black text-ink shadow-[0_2px_0_0_var(--color-shadow)] transition-all active:translate-y-[1px] active:shadow-none hover:border-coral"
+              className="h-9 px-3.5 flex items-center gap-1.5 whitespace-nowrap rounded-xl border-2 border-border bg-surface-subtle hover:bg-surface-hover text-xs font-black text-ink shadow-[0_2px_0_0_var(--color-shadow)] transition-all active:translate-y-[1px] active:shadow-none hover:border-coral"
               onClick={() => setAuthModalOpen(true)}
             >
               <span>Log In</span>

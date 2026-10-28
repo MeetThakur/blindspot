@@ -24,10 +24,12 @@ export function Lobby({ snapshot: s }: { snapshot: RoomSnapshot }) {
     client.updateSettings(undefined, { kind: 'custom', name, items });
     setEditorOpen(false);
   };
+  const timersOn = s.settings.answerTimeoutSec !== null || s.settings.turnTimeoutSec !== null;
+  const rulesSummary = `${s.settings.maxTurnsPerPlayer} turns each · ${timersOn ? 'Timers on' : 'No timers'}`;
   const currentCategory = CATEGORY_OPTIONS.find((c) => c.name === s.list?.name)?.id;
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 pb-16 pt-6">
+    <main className="mx-auto flex w-full max-w-5xl flex-col gap-5 px-4 pb-16 pt-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-black sm:text-3xl">Game Lobby</h1>
         <button type="button" className="btn-secondary" onClick={() => client.leave()}>
@@ -49,8 +51,8 @@ export function Lobby({ snapshot: s }: { snapshot: RoomSnapshot }) {
         <p className="w-full break-all text-sm text-ink-soft sm:hidden">{link}</p>
       </section>
 
-      <div className="grid gap-6 md:grid-cols-[1fr_1.3fr]">
-        <section className="card" aria-labelledby="players-h">
+      <div className="grid gap-5 md:grid-cols-[1fr_1.4fr]">
+        <section className="card flex flex-col md:self-start" aria-labelledby="players-h">
           <h2 id="players-h" className="text-xl font-extrabold">
             Players ({s.players.length}/{MAX_PLAYERS})
           </h2>
@@ -76,15 +78,53 @@ export function Lobby({ snapshot: s }: { snapshot: RoomSnapshot }) {
             ))}
           </ul>
           {!enough && <p className="mt-3 text-sm text-ink-soft">Share the code or invite link. You need at least 2 players.</p>}
+
+          <div className="mt-5 flex flex-col gap-2 border-t-2 border-border/30 pt-4">
+            {isHost ? (
+              <>
+                <button type="button" className="btn-primary w-full py-3 text-lg" disabled={startBlocker !== null} onClick={client.startGame}>
+                  Start game
+                </button>
+                {startBlocker && <p className="text-center text-sm text-ink-soft">{startBlocker}</p>}
+              </>
+            ) : (
+              <p className="text-center font-bold text-ink-soft" role="status">
+                Waiting for the host to start the game…
+              </p>
+            )}
+          </div>
         </section>
 
         <section className="card" aria-labelledby="settings-h">
           <h2 id="settings-h" className="text-xl font-extrabold">
             Game settings
           </h2>
-          {!isHost && <p className="text-sm text-ink-soft">Only the host can change these.</p>}
+          {!isHost && (
+            <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm" data-testid="settings-summary">
+              <dt className="font-extrabold text-ink-soft">Deck</dt>
+              <dd className="font-bold">
+                {s.list ? (
+                  currentCategory ? (
+                    `${s.list.name} (${s.list.count})`
+                  ) : (
+                    <>
+                      Custom list: <strong>{s.list.name}</strong> ({s.list.count} items)
+                    </>
+                  )
+                ) : (
+                  'Host is choosing…'
+                )}
+              </dd>
+              <dt className="font-extrabold text-ink-soft">Mode</dt>
+              <dd className="font-bold">{s.settings.mode === 'voice' ? 'Voice (ask out loud)' : 'Text (type questions)'}</dd>
+              <dt className="font-extrabold text-ink-soft">Rules</dt>
+              <dd className="font-bold">{rulesSummary}</dd>
+            </dl>
+          )}
 
-          <fieldset className="mt-3" disabled={!isHost}>
+          {isHost && (
+          <>
+          <fieldset className="mt-3">
             <legend className="label">Category</legend>
             <div className="flex flex-wrap gap-2">
               {CATEGORY_OPTIONS.map((c) => (
@@ -102,8 +142,7 @@ export function Lobby({ snapshot: s }: { snapshot: RoomSnapshot }) {
                 </button>
               ))}
             </div>
-            {isHost && (
-              <div className="mt-3">
+            <div className="mt-3">
                 <p className="label">Or play with your own list</p>
                 <div className="flex flex-wrap gap-2">
                   {cloudLists.map((cl) => (
@@ -145,7 +184,6 @@ export function Lobby({ snapshot: s }: { snapshot: RoomSnapshot }) {
                   </button>
                 </div>
               </div>
-            )}
             {s.list && !currentCategory && (
               <p className="mt-2 text-sm text-ink-soft">
                 Custom list: <strong>{s.list.name}</strong> ({s.list.count} items)
@@ -153,31 +191,29 @@ export function Lobby({ snapshot: s }: { snapshot: RoomSnapshot }) {
             )}
           </fieldset>
 
-          <fieldset className="mt-4" disabled={!isHost}>
+          <fieldset className="mt-4">
             <legend className="label">Game Mode</legend>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <button
                 type="button"
-                disabled={!isHost}
                 onClick={() => set({ mode: 'text' })}
                 className={`flex flex-col items-start rounded-xl border-2 border-ink p-3 text-left transition ${
                   s.settings.mode === 'text' ? 'bg-violet text-white shadow-[0_2px_0_0_var(--color-ink)]' : 'bg-surface hover:bg-amber/30'
                 }`}
               >
-                <span className="font-extrabold text-base">💬 Text mode</span>
+                <span className="font-extrabold">Text mode</span>
                 <span className={`text-xs mt-1 ${s.settings.mode === 'text' ? 'text-white/80' : 'text-ink-soft'}`}>
                   Type questions in the browser
                 </span>
               </button>
               <button
                 type="button"
-                disabled={!isHost}
                 onClick={() => set({ mode: 'voice' })}
                 className={`flex flex-col items-start rounded-xl border-2 border-ink p-3 text-left transition ${
                   s.settings.mode === 'voice' ? 'bg-violet text-white shadow-[0_2px_0_0_var(--color-ink)]' : 'bg-surface hover:bg-amber/30'
                 }`}
               >
-                <span className="font-extrabold text-base">🎙️ Voice mode</span>
+                <span className="font-extrabold">Voice mode</span>
                 <span className={`text-xs mt-1 ${s.settings.mode === 'voice' ? 'text-white/80' : 'text-ink-soft'}`}>
                   Ask out loud in call, wait for Yes/No
                 </span>
@@ -185,7 +221,13 @@ export function Lobby({ snapshot: s }: { snapshot: RoomSnapshot }) {
             </div>
           </fieldset>
 
-          <fieldset className="mt-4" disabled={!isHost}>
+          <details className="group mt-4 rounded-xl border-2 border-border/50 bg-surface-subtle">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 font-extrabold">
+              <span>Round rules</span>
+              <span className="text-sm font-bold text-ink-soft">{rulesSummary} <span aria-hidden="true" className="inline-block transition group-open:rotate-180">▾</span></span>
+            </summary>
+            <div className="px-3 pb-3">
+          <fieldset className="mt-3">
             <legend className="sr-only">Round rules</legend>
             <Setting label="Turns per player">
               <select className="field" value={s.settings.maxTurnsPerPlayer} onChange={(e) => set({ maxTurnsPerPlayer: Number(e.target.value) })}>
@@ -198,7 +240,7 @@ export function Lobby({ snapshot: s }: { snapshot: RoomSnapshot }) {
             </Setting>
           </fieldset>
 
-          <fieldset className="mt-4 grid gap-3 sm:grid-cols-2" disabled={!isHost}>
+          <fieldset className="mt-3 grid gap-3 sm:grid-cols-2">
             <legend className="label mt-1">Timers</legend>
             <Setting label="Answer time limit">
               <select
@@ -242,12 +284,16 @@ export function Lobby({ snapshot: s }: { snapshot: RoomSnapshot }) {
             <p className="mt-2 text-sm text-ink-soft">Timers are off. The host can skip a stuck answer or turn at any time.</p>
           )}
 
-          <div className="mt-4 rounded-xl border-2 border-border bg-mint text-ink p-3 text-sm" aria-label="Scoring rules">
+          <div className="mt-3 rounded-xl border-2 border-border bg-mint p-3 text-sm text-ink" aria-label="Scoring rules">
             <p className="font-extrabold">Scoring & Placement</p>
             <p>
               1st player to guess correctly scores {Math.max(2, s.players.length)} points, 2nd scores {Math.max(1, s.players.length - 1)} points, and so on. A wrong guess simply passes your turn to the next player.
             </p>
           </div>
+            </div>
+          </details>
+          </>
+          )}
         </section>
       </div>
 
@@ -255,20 +301,6 @@ export function Lobby({ snapshot: s }: { snapshot: RoomSnapshot }) {
         <ListEditor store={store} playerCount={s.players.length} onUse={useList} onSaved={refresh} onClose={() => setEditorOpen(false)} />
       )}
 
-      <div className="flex flex-col items-center gap-2">
-        {isHost ? (
-          <>
-            <button type="button" className="btn-primary px-8 text-lg" disabled={startBlocker !== null} onClick={client.startGame}>
-              Start game
-            </button>
-            {startBlocker && <p className="text-sm text-ink-soft">{startBlocker}</p>}
-          </>
-        ) : (
-          <p className="font-bold text-ink-soft" role="status">
-            Waiting for the host to start the game…
-          </p>
-        )}
-      </div>
     </main>
   );
 }

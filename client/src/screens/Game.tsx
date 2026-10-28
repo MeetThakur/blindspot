@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Answer, MAX_GUESS_LENGTH, MAX_QUESTION_LENGTH, Phase, TimerKind, type HistoryEntry, type PlayerSnapshot, type RoomSnapshot } from '@whoami/shared';
 import { useGame } from '../lib/store';
 import { ANSWER_BG, ANSWER_LABEL, colorHex, getHistoryPlayerId, nameOf, playerById, statusFor } from '../lib/view';
@@ -20,6 +20,16 @@ export function Game({ snapshot: s }: { snapshot: RoomSnapshot }) {
     info: 'bg-sky/20 text-ink',
     paused: 'bg-amber text-[#241f3d]',
   }[status.tone];
+
+  const needsYou = status.tone === 'you';
+  useEffect(() => {
+    if (!needsYou) return;
+    const prev = document.title;
+    document.title = 'Your turn! · Playdeck';
+    return () => {
+      document.title = prev;
+    };
+  }, [needsYou]);
 
   const handleSelectPlayer = (id: string | 'all') => {
     setFilterPlayerId(id);
@@ -73,7 +83,7 @@ export function Game({ snapshot: s }: { snapshot: RoomSnapshot }) {
           </section>
         </div>
 
-        <aside className="flex flex-col gap-4">
+        <aside className="flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start">
           {isHost && <HostControls s={s} />}
           <History
             s={s}
@@ -109,118 +119,91 @@ function PlayerCard({
   return (
     <article
       className={`card relative overflow-hidden !p-0 transition-all duration-200 ${
-        active
-          ? 'border-4 !border-coral shadow-[0_0_0_2px_#ff724f,0_8px_24px_rgba(255,114,79,0.35),0_4px_0_0_var(--color-shadow)] ring-4 ring-coral/30 scale-[1.015] z-10'
-          : 'opacity-90 hover:opacity-100'
+        active ? '!border-coral ring-4 ring-coral/30' : ''
       }`}
       aria-label={`${p.name}${me ? ' (you)' : ''}`}
       data-testid={`player-${p.name}`}
       data-active={active ? 'true' : 'false'}
     >
       {active ? (
-        <div className="flex items-center justify-between bg-gradient-to-r from-coral to-amber px-3 py-1.5 text-white shadow-sm">
-          <div className="flex items-center gap-1.5 font-black text-xs uppercase tracking-wider">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-90" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" />
-            </span>
-            <span>{me ? '🎯 Your Turn' : `🎯 ${p.name}'s Turn`}</span>
-          </div>
-          <span className="rounded-full bg-black/30 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">
-            {live === Phase.COLLECTING_ANSWERS ? 'Awaiting Answers' : live === Phase.SHOWING_ANSWERS ? 'Revealing' : 'Active Turn'}
+        <div className="flex items-center justify-between bg-coral px-3 py-1.5 text-white">
+          <span className="text-xs font-black uppercase tracking-wider">{me ? 'Your turn' : `${p.name}'s turn`}</span>
+          <span className="text-[11px] font-bold opacity-90">
+            {live === Phase.COLLECTING_ANSWERS ? 'Waiting for answers' : live === Phase.SHOWING_ANSWERS ? 'Revealing' : 'Thinking'}
           </span>
         </div>
       ) : (
         <div className="h-2" style={{ background: colorHex(p.color) }} />
       )}
-      <div className="p-3">
+      <div className="flex flex-col gap-2.5 p-3">
         <div className="flex items-center gap-2">
           <Avatar name={p.name} color={p.color} size={32} />
           <span className="min-w-0 flex-1 truncate text-lg font-extrabold">{p.name}</span>
-          {active && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-coral px-2.5 py-0.5 text-xs font-black text-white shadow-sm animate-pulse">
-              <span>🎯</span>
-              <span>{live === Phase.COLLECTING_ANSWERS ? 'Asked' : 'Turn'}</span>
-            </span>
-          )}
-        </div>
-        <div className="mt-1 flex flex-wrap gap-1">
-          {me && <Badge tone="you">You</Badge>}
-          {p.isHost && <Badge tone="host">Host</Badge>}
-          {p.solved && <Badge tone="good">Solved</Badge>}
-          {p.afk && <Badge tone="warn">AFK</Badge>}
-          {!p.connected && <Badge tone="warn">Offline</Badge>}
-          {owes && <Badge>Thinking…</Badge>}
-          {answered && <Badge tone="good">Answered</Badge>}
+          <span className="text-sm font-bold text-ink-soft">
+            <strong className="text-ink">{p.totalScore}</strong> pts
+          </span>
         </div>
 
-        {active && currentQuestionText && (
-          <div className="mt-2.5 rounded-xl border-2 border-coral/60 bg-coral/10 p-2.5 text-xs font-bold text-ink">
-            <div className="text-[10px] font-black uppercase tracking-wider text-coral">
-              Current Question:
-            </div>
-            <div className="mt-0.5 text-sm font-extrabold text-ink break-words">
-              “{currentQuestionText}”
-            </div>
-          </div>
-        )}
-
-        <div className="mt-3 rounded-xl border-2 border-dashed border-ink bg-paper p-3 text-center">
+        <div className="rounded-xl border-2 border-dashed border-ink bg-paper px-3 py-4 text-center">
           {me && !p.identity ? (
             <p className="font-bold text-ink-soft">Your identity is hidden from you.</p>
           ) : (
             <>
               {me && <p className="text-xs font-bold text-ink-soft">You figured it out!</p>}
-              <p className="text-xl font-black break-words">{p.identity}</p>
+              <p className="break-words text-2xl font-black">{p.identity}</p>
             </>
           )}
         </div>
 
-        <div className="mt-2 flex items-center justify-between text-sm text-ink-soft">
-          <span>
-            Round <strong className="text-ink">{p.roundScore}</strong> · Total <strong className="text-ink">{p.totalScore}</strong>
-          </span>
-          <span>
-            {p.questionsAsked}Q · {p.wrongGuesses}✗
-          </span>
-        </div>
+        {(me || p.isHost || p.solved || p.afk || !p.connected || owes || answered) && (
+          <div className="flex flex-wrap gap-1">
+            {me && <Badge tone="you">You</Badge>}
+            {p.isHost && <Badge tone="host">Host</Badge>}
+            {p.solved && <Badge tone="good">Solved</Badge>}
+            {p.afk && <Badge tone="warn">AFK</Badge>}
+            {!p.connected && <Badge tone="warn">Offline</Badge>}
+            {owes && <Badge>Thinking…</Badge>}
+            {answered && <Badge tone="good">Answered</Badge>}
+          </div>
+        )}
 
-        <div className="mt-2.5 flex items-center justify-between border-t border-border pt-2">
-          <button
-            type="button"
-            onClick={() => onSelectPlayer(p.id)}
-            className="flex items-center gap-1.5 text-xs font-bold text-violet transition hover:underline"
-            aria-label={`View questions asked by ${p.name}`}
-          >
-            <span>{me ? 'Your' : `${p.name}'s`} questions</span>
-            <span className="rounded-full bg-violet/15 px-1.5 py-0.2 text-[11px] font-extrabold text-violet">
-              {p.questionsAsked}
-            </span>
-            <span aria-hidden="true">→</span>
-          </button>
-        </div>
+        {active && currentQuestionText && (
+          <div className="rounded-xl border-2 border-coral/60 bg-coral/10 p-2.5 text-sm font-extrabold break-words">
+            “{currentQuestionText}”
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() => onSelectPlayer(p.id)}
+          className="flex items-center justify-between border-t border-border pt-2 text-xs font-bold text-violet transition hover:underline"
+          aria-label={`View questions asked by ${p.name}`}
+        >
+          <span>
+            {me ? 'Your' : `${p.name}'s`} questions ({p.questionsAsked}) · {p.wrongGuesses} wrong {p.wrongGuesses === 1 ? 'guess' : 'guesses'}
+          </span>
+          <span aria-hidden="true">→</span>
+        </button>
 
         {isHost && !me && !p.solved && p.wrongGuesses > 0 && (
           <button
             type="button"
             onClick={() => client.acceptGuess(p.id)}
-            className="btn-secondary mt-2 w-full !min-h-9 !py-1 text-xs font-bold text-lime-700 dark:text-lime-400 border-lime-600/40 hover:bg-lime/20"
+            className="btn-secondary w-full !min-h-9 !py-1 text-xs font-bold text-lime-700 dark:text-lime-400 border-lime-600/40 hover:bg-lime/20"
           >
             ✓ Close enough! (Accept guess)
           </button>
         )}
 
         {isHost && !me && (!p.connected || p.afk) && (
-          <div className="mt-2">
-            <ConfirmButton
-              label="Remove player"
-              className="btn-danger !min-h-9 w-full !py-1 text-sm"
-              title={`Remove ${p.name}?`}
-              body="They will be removed from the game. The round continues without them."
-              confirmLabel="Remove"
-              onConfirm={() => client.kick(p.id)}
-            />
-          </div>
+          <ConfirmButton
+            label="Remove player"
+            className="btn-danger !min-h-9 w-full !py-1 text-sm"
+            title={`Remove ${p.name}?`}
+            body="They will be removed from the game. The round continues without them."
+            confirmLabel="Remove"
+            onConfirm={() => client.kick(p.id)}
+          />
         )}
       </div>
     </article>
@@ -242,9 +225,11 @@ function TurnPanel({ s }: { s: RoomSnapshot }) {
   const [mode, setMode] = useState<'ask' | 'guess'>('ask');
   const [text, setText] = useState('');
   const [locked, lock] = useBriefLock();
+  const inputRef = useRef<HTMLInputElement>(null);
   const max = mode === 'ask' ? MAX_QUESTION_LENGTH : MAX_GUESS_LENGTH;
   const trimmed = text.trim();
   const isVoice = s.settings.mode === 'voice';
+  const quick = ['Am I a real person?', 'Am I alive?', 'Am I a man?', 'Am I from a movie or show?', 'Am I an animal?'];
 
   const submit = () => {
     if (!trimmed || locked) return;
@@ -298,12 +283,14 @@ function TurnPanel({ s }: { s: RoomSnapshot }) {
           }}
         >
           <label className="label" htmlFor="turn-input">
-            {mode === 'ask' ? 'Your question (the others answer Yes / No / Not sure)' : 'Who or what do you think you are? One shot, a wrong guess costs your turn.'}
+            {mode === 'ask' ? 'Your question (the others answer Yes / No / Not sure)' : 'Who or what do you think you are? One shot, a wrong guess passes your turn.'}
           </label>
           <div className="flex gap-2">
             <input
               id="turn-input"
+              ref={inputRef}
               className="field"
+              autoFocus
               value={text}
               maxLength={max}
               disabled={locked}
@@ -315,6 +302,24 @@ function TurnPanel({ s }: { s: RoomSnapshot }) {
               {mode === 'ask' ? 'Ask' : 'Guess'}
             </button>
           </div>
+          {mode === 'ask' && (
+            <div className="mt-2.5 flex flex-wrap gap-1.5" aria-label="Quick questions">
+              {quick.map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  disabled={locked}
+                  onClick={() => {
+                    setText(q);
+                    inputRef.current?.focus();
+                  }}
+                  className="rounded-full border-2 border-border/50 bg-surface-subtle px-2.5 py-1 text-xs font-bold text-ink-soft transition hover:border-border hover:text-ink"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          )}
           <p className="mt-1 text-right text-xs text-ink-soft">
             {text.length}/{max}
           </p>
@@ -333,6 +338,24 @@ function AnswerPanel({ s }: { s: RoomSnapshot }) {
   const asker = nameOf(s, p.askerId);
   const missing = p.required.filter((id) => !p.answeredBy.includes(id));
   const isVoice = p.text === '(Voice question)' || s.settings.mode === 'voice';
+  const canAnswer = owes && mine === null && !locked;
+
+  useEffect(() => {
+    if (!canAnswer) return;
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const k = e.key.toLowerCase();
+      const value = k === 'y' ? Answer.YES : k === 'n' ? Answer.NO : k === 's' ? Answer.NOT_SURE : null;
+      if (value) {
+        lock();
+        client.answer(value);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [canAnswer, client, lock]);
 
   return (
     <section className="card" aria-label="Answers">
@@ -356,7 +379,7 @@ function AnswerPanel({ s }: { s: RoomSnapshot }) {
                 lock();
                 client.answer(value);
               }}
-              className={`btn ${bg} ${mine === value ? 'ring-4 ring-violet' : ''} ${mine !== null && mine !== value ? '!opacity-40' : ''}`}
+              className={`btn ${bg} !min-h-16 text-xl ${mine === value ? 'ring-4 ring-violet' : ''} ${mine !== null && mine !== value ? '!opacity-40' : ''}`}
             >
               {label}
             </button>
@@ -365,6 +388,7 @@ function AnswerPanel({ s }: { s: RoomSnapshot }) {
       ) : (
         <p className="mt-3 text-ink-soft">You asked this one. Sit tight while the others answer.</p>
       )}
+      {canAnswer && <p className="mt-2 text-xs text-ink-soft">Tip: press Y, N or S to answer.</p>}
       <p className="mt-3 text-sm text-ink-soft">
         Answered: {p.answeredBy.length}/{p.required.length}
         {missing.length > 0 && <> · Waiting on {missing.map((id) => nameOf(s, id)).join(', ')}</>}
@@ -423,15 +447,15 @@ function HostControls({ s }: { s: RoomSnapshot }) {
   const guessers = s.players.filter((p) => !p.solved && p.wrongGuesses > 0);
 
   return (
-    <section className="card" aria-label="Host controls">
-      <h2 className="text-lg font-extrabold">Host controls</h2>
-      <div className="mt-2 flex flex-col gap-2">
-        <button type="button" className="btn-secondary" disabled={paused || live !== Phase.ASKING} onClick={client.skipTurn}>
+    <section className="card !p-3" aria-label="Host controls">
+      <h2 className="mb-2 text-sm font-extrabold uppercase tracking-wider text-ink-soft">Host controls</h2>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" className="btn-secondary !min-h-9 !py-1 text-sm" disabled={paused || live !== Phase.ASKING} onClick={client.skipTurn}>
           Skip turn
         </button>
         <button
           type="button"
-          className={s.pending?.timedOut ? 'btn-primary' : 'btn-secondary'}
+          className={`${s.pending?.timedOut ? 'btn-primary' : 'btn-secondary'} !min-h-9 !py-1 text-sm`}
           disabled={paused || live !== Phase.COLLECTING_ANSWERS}
           onClick={() => client.skipAnswer()}
         >
@@ -439,28 +463,29 @@ function HostControls({ s }: { s: RoomSnapshot }) {
         </button>
         <ConfirmButton
           label="End round"
+          className="btn-secondary !min-h-9 !py-1 text-sm"
           title="End this round?"
           body="Everyone's identity is revealed and the round ends now. Points scored so far are kept."
           confirmLabel="End round"
           disabled={paused}
           onConfirm={client.endRound}
         />
-        {guessers.length > 0 && (
-          <div className="mt-2 border-t border-border pt-2 flex flex-col gap-1.5">
-            <p className="text-xs font-bold text-ink-soft">Accept previous guess ("Close enough"):</p>
-            {guessers.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => client.acceptGuess(p.id)}
-                className="btn-secondary !py-1 text-xs font-bold text-lime-700 dark:text-lime-400 hover:bg-lime/20 border-lime-600/40"
-              >
-                ✓ Accept {p.name}'s guess
-              </button>
-            ))}
-          </div>
-        )}
       </div>
+      {guessers.length > 0 && (
+        <div className="mt-3 flex flex-col gap-1.5 border-t border-border pt-2">
+          <p className="text-xs font-bold text-ink-soft">Accept previous guess ("Close enough"):</p>
+          {guessers.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => client.acceptGuess(p.id)}
+              className="btn-secondary !min-h-9 !py-1 text-xs font-bold text-lime-700 dark:text-lime-400 hover:bg-lime/20 border-lime-600/40"
+            >
+              ✓ Accept {p.name}'s guess
+            </button>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
