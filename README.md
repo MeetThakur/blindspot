@@ -2,15 +2,18 @@
 
 *Real-time multiplayer browser party games for friends, game nights, and Discord calls.*
 
-Playdeck is an open-source real-time multiplayer party portal featuring 3 distinct games built with zero accounts, zero databases, and instant room code sharing.
+Playdeck is a real-time multiplayer party portal with 3 games, built for instant play: no accounts required, no database, and rooms you share with a short code or a link. Live at **https://playydeck.vercel.app** (note the double *y*). Works on desktop and phones.
 
 ### 🎮 Featured Games
 1. **Blindspot** (2–5 Players): *Everyone can see who you are, except you.* Ask questions, make guesses, and deduce your secret identity.
-2. **Barricade** (2–4 Players): *King of the Hill Tactical Maze.* Race your pawn to the crown at the center of the grid, roll dice, and strategically deploy barricades to block rivals.
+2. **Barricade** (2–4 Players): *King of the Hill Tactical Maze.* Race your pawn to the crown at the center of the grid and place walls to block rivals.
 3. **Battleship** (2–4 Players): *Free-for-All Naval Warfare.* Deploy your 5-warship fleet secretly, then track and fire artillery across multiple opponent radar screens simultaneously.
 
-- No accounts, no database, no paid services. Rooms live in memory, joined with a short code or an invite link (`/?room=ABCDE`).
+- No accounts needed, no database, no paid services. Rooms live in memory, joined with a short code or an invite link (`/?room=ABCDE`). Optional login, friends and cloud decks light up when Supabase is configured (see [Configuration](#configuration)).
 - Server-authoritative: the server verifies moves, validates collisions/bounds, owns timers, and enforces fog-of-war privacy snapshots.
+
+### Preview
+▶ [Watch the 25-second Blindspot promo](docs/media/blindspot.mp4) (no sound)
 
 ## Contents
 [How it plays](#how-it-plays) · [Repo layout](#repo-layout) · [Setup](#setup) · [Develop](#develop) · [Test](#test) · [Configuration](#configuration) · [Deploy](#deploy) · [Known limitations](#known-limitations) · [Security notes](#security-notes)
@@ -24,27 +27,31 @@ Playdeck features 3 distinct multiplayer games within a unified room lobby and r
 - **Setup:** The host selects a built-in category (Pop Culture, Animals, History, Video Games, etc.) or creates a custom list.
 - **Identity Assignment:** Each player is secretly assigned a character or object that *everyone else can see except them*.
 - **The Turn:** Ask a question (e.g., *"Am I fictional?"*) or attempt a direct guess (never both). Other players answer simultaneously with private responses that reveal together once everyone responds.
-- **Scoring & Endgame:** Correct guesses earn points (+1, plus optional speed bonuses). Wrong guesses forfeit the turn and apply a small penalty. Solved players remain as judges so rounds never stall.
+- **Guessing:** Matching ignores case, accents and punctuation, with fuzzy matching for near misses, and the host can accept a "close enough" guess.
+- **Scoring & Endgame:** Placement scoring: with 4 players the 1st correct guess earns 4 points, the 2nd earns 3, and so on (never below 1). A wrong guess just passes your turn, with no penalty. Solved players stay in as answerers so rounds never stall.
+- **Modes:** Text mode (type questions in the browser) or Voice mode (ask out loud on a call, others tap Yes / No / Not sure). On your turn there are one-tap quick questions, and answerers can press <kbd>Y</kbd>, <kbd>N</kbd> or <kbd>S</kbd>.
 
 ### 2. Barricade (2–4 Players)
 *King of the Hill tactical race and maze builder.*
 - **Objective:** First pawn to step onto the golden crown at coordinate **F6 (5, 5)** wins the match.
 - **Board & Movement:** 11×11 grid (121 tiles). On your turn, choose between moving your pawn 1 orthogonal step (jumping over adjacent opponents is allowed) or placing a 2-segment barricade.
-- **Wall Strategy:** Place customizable barricades (configurable from **5 to 10 walls per player** with up/down stepper or direct numeric entry). Walls span between tile intersections horizontally or vertically (`R` or `Space` to rotate).
+- **Wall Strategy:** Place walls (configurable from **5 to 10 per player**). Walls span between tile intersections horizontally or vertically (`R` or `Space` to rotate). On phones, tap to aim a wall (with a preview) and confirm with the pinned button.
 - **Fairness Guarantee:** The server enforces pathfinding validation (BFS) to guarantee that placed walls never completely trap any player from reaching the crown.
 
 ### 3. Battleship (2–4 Players)
 *Multiplayer naval radar combat with real-time fog of war.*
 - **Fleet Deployment:** Deploy your 5-warship armada across a 10×10 oceanic grid:
   - Carrier (5 cells), Battleship (4 cells), Cruiser (3 cells), Submarine (3 cells), Destroyer (2 cells).
-  - Intuitive controls: Click/drag with live green/red ghost preview, instant rotation via <kbd>R</kbd>, <kbd>Space</kbd>, right-click, or on-board ship click, plus quick randomize.
-- **Multi-Target Radar Warfare:** Switch between opponents' radar screens using dedicated target tabs. Call artillery strikes on enemy grids with instant hit/miss and ship-sunk feedback.
+  - Controls: click with a live green/red ghost preview, rotate via <kbd>R</kbd>, <kbd>Space</kbd>, right-click or by clicking a placed ship, plus quick randomize. On phones, pick a ship and tap the ocean.
+- **Multi-Target Radar Warfare:** Switch between opponents' radar screens using target tabs (shown when there is more than one rival). Strikes give instant hit, miss and ship-sunk feedback. Optional "extra shot on hit" rule. On phones, tap to aim and press **Fire**.
 - **Turn Rotation & Elimination:** When a fleet is entirely sunk, that player is eliminated from firing but can spectate remaining warfare until the last fleet stands.
 
 ---
 
 ### Universal Platform Features
-- **No accounts or signups:** Rooms live strictly in memory; join instantly with a 5-letter code or invite link (`/?room=ABCDE`).
+- **No signups needed:** Rooms live strictly in memory; join instantly with a 5-letter code or invite link (`/?room=ABCDE`).
+- **Phone friendly:** Touch-first controls (tap to aim, then confirm), 44px tap targets and notch-safe layouts.
+- **Optional accounts:** With Supabase configured you get a username login, friends and cloud-saved custom decks. Without it the game works exactly as before.
 - **Resilient reconnects:** Seamless automatic reconnection tokens preserve your seat, active turns, and game states across browser refreshes or network hiccups.
 - **Timers & host controls:** Host-configurable timers (off / 15s / 30s / 45s / 60s) with automatic skip and AFK protection to keep party games moving smoothly.
 - **Privacy & security:** Server-authoritative engine verifies every move and sends fog-of-war filtered snapshots so secret identities and hidden warships can never be inspected in client network logs.
@@ -57,7 +64,9 @@ server/   Node + TypeScript + Socket.IO (Express only serves /health)
   src/game/      pure game state machine: reduce(state, action, ctx) -> new state + events (no networking, no clocks)
   src/gameServer.ts   sockets, sessions, rate limits, per-room timer scheduling
 client/   React 19 + TypeScript + Vite 7 + Tailwind CSS 4
+  src/battleship/, src/barricade/   the other two engines (same reducer pattern)
 docs/MANUAL_TESTING.md   checklist for real browsers, phones and bad networks
+supabase/                optional schema for login, friends and cloud decks
 render.yaml              Render blueprint for the server
 ```
 
@@ -117,6 +126,7 @@ Fixed in code: rooms are deleted after 30 minutes with nobody connected, max mes
 | Variable | Default | Purpose |
 |---|---|---|
 | `VITE_SERVER_URL` | `http://localhost:3001` | URL of the game server (HTTPS in production, no trailing slash). Baked in at build time. |
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | unset | Optional. Enables login, friends and cloud decks. Leave unset to run without accounts. |
 
 ## Deploy
 
@@ -163,8 +173,8 @@ Open the site in two browsers, create a room in one and join from the invite lin
 - **Answers are on the honor system.** The people answering see your identity (that's the game). Nothing stops a friend on Discord from blurting it out,
   and the server can't know whether "Yes" was true.
 - **Free-tier cold starts.** Free hosts sleep when idle; the first visit can take up to a minute. The home screen shows "Waking up the server…" while it connects.
-- **Saved lists are per browser.** They live in `localStorage` and don't sync across devices (export a file to move one). Clearing site data deletes them.
-- **No accounts.** Your seat is tied to a token kept in that browser tab (`sessionStorage`); closing the tab for good means rejoining with a new name.
+- **Saved lists are per browser** unless you log in (then cloud decks sync). Local lists live in `localStorage`; export a file to move one. Clearing site data deletes them.
+- **Seats are tied to a browser.** Your seat is tied to a token kept in that browser (even with login), so closing the tab for good means rejoining with a new name.
 - **Rate limits are per IP.** Players sharing one network (a school, an office) share the room-creation and join budgets.
 - **Only built-in categories have server-side lists;** the hand-written built-in lists are small (24 items each).
 - Late joiners can't enter a round in progress; they can join between rounds.
